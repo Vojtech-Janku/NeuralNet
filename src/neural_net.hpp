@@ -115,6 +115,17 @@ map< Activation, pair<act_fun, act_fun> > activ_functions = {
     { Activation::TANH,         make_pair(tanh_fun, tanh_diff) }
 };
 
+// layers       TODO: rewrite layers as classes
+enum LayerType{ DEEP, CONVOLUTIONAL };
+// just for printing
+string get_str( Optimizer opt ) {
+    switch (opt) {
+    case LayerType::DEEP:          return "DEEP";
+    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
+    default:                       return "Unknown";
+    }
+}
+
 // optimizers
 enum Optimizer{ GRAD, MOMENTUM, ADAM };
 // just for printing
@@ -166,6 +177,7 @@ struct Layer
     matrix<float> weights;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
+};
 
 public:
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
@@ -221,7 +233,6 @@ public:
             lay_state.derivative[n] = activ_derivative( lay_state.potential[n] );
         }
     }
-};
 
 // Neural_net - the class for the whole neural network.
 // Contains all layers and their states, parameter values,
@@ -249,6 +260,7 @@ public:
         }
     }
 
+    //TODO: add LayerType and a logic for Convolutional layer
     void add_layer( size_t layer_size, size_t input_size, Activation a ) {
         layers.push_back(     Layer( layer_size, input_size, a ) );
         lay_states.push_back( layer_state( layer_size, input_size ) );
