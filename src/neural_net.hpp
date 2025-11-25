@@ -1,8 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <map>
-#include <omp.h>
+//#include <omp.h>
 #include <random>
 #include <vector>
 #include "Layer.hpp"
@@ -13,6 +12,8 @@ template< typename T >
 using matrix = vector<vector<T>>;
 
 float TOLERANCE = 0.00001;
+
+// vector and matrix util
 bool operator==( const vector<float> &a, const vector<float> &b) {
     if ( a.size() != b.size() ) return false;
     for ( size_t i = 0; i < a.size(); i++) {
@@ -81,37 +82,6 @@ void print_matrix( const matrix<T> &mat ) {
     }
 }
 
-// activation functions and their derivatives
-typedef float (*act_fun)(float);
-float step( float x ) { return ( x < 0 ) ? 0 : 1; }
-float relu( float x ) { return ( x < 0 ) ? 0 : x; }
-float leaky_relu( float x ) { return ( x < 0 ) ? x/16 : x; }
-float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }  //{ return x / (1 + abs(x)); } // "fast" sigmoid
-float tanh_fun( float x ) { return std::tanh(x); }
-float step_diff( float ) { return 0; }
-float relu_diff( float x ) { return ( x <= 0 ) ? 0 : 1; }
-float leaky_relu_diff( float x ) { return ( x < 0 ) ? 1/16 : 1; }
-float sigmoid_diff( float x ) { return sigmoid(x) * (1 - sigmoid(x) ); }
-float tanh_diff( float x ) { return 1 - std::pow(std::tanh(x), 2); }
-map< Activation, pair<act_fun, act_fun> > activ_functions = {
-    { Activation::STEP,         make_pair(step, step_diff) },
-    { Activation::RELU,         make_pair(relu, relu_diff) },
-    { Activation::LEAKY_RELU,   make_pair(leaky_relu, leaky_relu_diff) },
-    { Activation::SIGMOID,      make_pair(sigmoid, sigmoid_diff) },
-    { Activation::TANH,         make_pair(tanh_fun, tanh_diff) }
-};
-
-// layers       TODO: rewrite layers as classes
-enum LayerType{ DEEP, CONVOLUTIONAL };
-// just for printing
-string get_str( Optimizer opt ) {
-    switch (opt) {
-    case LayerType::DEEP:          return "DEEP";
-    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
-    default:                       return "Unknown";
-    }
-}
-
 // optimizers
 enum Optimizer{ GRAD, MOMENTUM, ADAM };
 // just for printing
@@ -123,54 +93,6 @@ string get_str( Optimizer opt ) {
     default:                       return "Unknown";
     }
 }
-
-    // uniform initialization
-    // I found experimentally that it's better to initialize biases a bit higher
-    void initialize_uniform( float min = 0, float max = 0.1 ) {
-        std::default_random_engine generator;
-        std::uniform_real_distribution<float> distribution(min, max);
-        std::uniform_real_distribution<float> bias_distribution(min, 5*max);
-        for ( size_t i = 0; i < weights.size(); i++ ) {
-            for ( auto &w : weights[i] ) {
-                w = distribution(generator);
-            }
-            bias[i] = bias_distribution(generator);
-        }
-    }
-    // gaussian initialization
-    void initialize_gauss( float mean = 0, float stddev = 1 ) {
-        std::default_random_engine generator;
-        std::normal_distribution<float> distribution(mean, stddev);
-        std::normal_distribution<float> bias_distribution(0.01, 0.01);
-        for ( size_t i = 0; i < weights.size(); i++ ) {
-            for ( auto &w : weights[i] ) {
-                w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
-            }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
-            bias[i] = fabs( bias_distribution(generator) );
-        }
-    }
-
-    // the core of feed forward - computes potential and output for this layer
-    void compute_potential( const vector<float> &input, layer_state &lay_state ) {
-        float pot;
-      #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < bias.size(); j++ ) {
-            pot = 0;
-            for ( size_t i = 0; i < input.size(); i++ ) {
-                pot += ( weights[j][i] * input[i] );
-            }
-            pot += bias[j];
-            lay_state.potential[j] = pot;
-            lay_state.output[j] = activation( pot );
-        }
-    }
-
-    // computes the derivative of activation with current potential - used in backpropagation
-    void compute_derivative( layer_state &lay_state ) {
-        for ( size_t n = 0; n < bias.size(); n++ ) {
-            lay_state.derivative[n] = activ_derivative( lay_state.potential[n] );
-        }
-    }
 
 // Neural_net - the class for the whole neural network.
 // Contains all layers and their states, parameter values,
@@ -218,9 +140,9 @@ public:
 
     // basic feed forward algorithm
     const vector<float> &feed_forward( const vector<float> &input ) {
-        layers[0].compute_potential( input, lay_states[0] );
+        layers[0].compute_potential( input );
         for ( int i = 1; i < layers.size(); i++ ) {
-            layers[i].compute_potential( lay_states[i-1].output, lay_states[i] );
+            layers[i].compute_potential( lay_states[i-1].output );
         }
         return lay_states.back().output;
     }
@@ -271,7 +193,7 @@ public:
     // computes all activation functions derivatives
     void compute_derivatives() {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-            layers[lay].compute_derivative( lay_states[lay] );
+            layers[lay].compute_derivative();
         }        
     }
 
@@ -290,16 +212,9 @@ public:
         float err = 0;
         // go through training data
         for ( size_t k = batch_range.first; k < batch_range.second; k++ ) {
-            // 1. forward pass
             feed_forward( data[k] );
-
-            // compute derivatives
             compute_derivatives();
-            
-            // 2. backpropagation
             backpropagation( labels[k] );
-            
-            // compute gradient
             compute_epsilon( data[k] );
         }
         // average the gradient

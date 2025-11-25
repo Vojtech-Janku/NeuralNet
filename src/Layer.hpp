@@ -78,10 +78,10 @@ struct Layer
 
 public:
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ) {
+    : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
+      layState( neuron_count, input_count ) {
         bias =      vector<float>(neuron_count);
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
-        layState =  layer_state( neuron_count, input_count );
     }
 
     // uniform initialization
