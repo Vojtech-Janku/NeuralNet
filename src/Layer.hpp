@@ -1,10 +1,41 @@
 #include <map>
+#include <random>
 #include <vector>
 
 using namespace std;
 
 template< typename T >
 using matrix = vector<vector<T>>;
+
+// struct representing the inner state of the layer
+// used for storing all computations
+struct layer_state {
+    vector<float> potential;    // potential of each neuron
+    vector<float> output;       // output of each neuron
+    vector<float> derivative;   // derivative of sigma( potential )
+    matrix<float> epsilon;      // gradient
+    vector<float> epsilon_bias; // gradient for bias weights
+    vector<float> err_output;   // (d Err / d output) for each neuron
+    // optimizer computations
+    matrix<float> m;    // used for MOMENTUM or first moment in ADAM
+    matrix<float> v;    // used for second moment in ADAM
+    vector<float> m_bias;
+    vector<float> v_bias;
+
+    layer_state( int n, int incoming ) {
+        potential =     vector<float>(n);
+        output =        vector<float>(n);
+        derivative =    vector<float>(n);
+        epsilon_bias =  vector<float>(n);
+        epsilon =       matrix<float>( n, vector<float>(incoming) );
+        err_output =    vector<float>(n);
+
+        m =       matrix<float>( n, vector<float>(incoming) );
+        v =       matrix<float>( n, vector<float>(incoming) );
+        m_bias =  vector<float>(n);
+        v_bias =  vector<float>(n);
+    }
+};
 
 // struct for layer weights, activation function, weight initializers and other methods
 // a Layer struct consists of a row of neurons and the weights of their inbound edges (coming from previous layer) 
