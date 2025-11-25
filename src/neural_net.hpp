@@ -101,6 +101,17 @@ map< Activation, pair<act_fun, act_fun> > activ_functions = {
     { Activation::TANH,         make_pair(tanh_fun, tanh_diff) }
 };
 
+// layers       TODO: rewrite layers as classes
+enum LayerType{ DEEP, CONVOLUTIONAL };
+// just for printing
+string get_str( Optimizer opt ) {
+    switch (opt) {
+    case LayerType::DEEP:          return "DEEP";
+    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
+    default:                       return "Unknown";
+    }
+}
+
 // optimizers
 enum Optimizer{ GRAD, MOMENTUM, ADAM };
 // just for printing
