@@ -45,41 +45,43 @@ struct Layer
     matrix<float> weights;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
-    //layer_state layState;
+    layer_state layState;
 
-    struct layer_state {
-    vector<float> potential;    // potential of each neuron
-    vector<float> output;       // output of each neuron
-    vector<float> derivative;   // derivative of sigma( potential )
-    matrix<float> epsilon;      // gradient
-    vector<float> epsilon_bias; // gradient for bias weights
-    vector<float> err_output;   // (d Err / d output) for each neuron
-    // optimizer computations
-    matrix<float> m;    // used for MOMENTUM or first moment in ADAM
-    matrix<float> v;    // used for second moment in ADAM
-    vector<float> m_bias;
-    vector<float> v_bias;
+    struct state {
+        vector<float> potential;    // potential of each neuron
+        vector<float> output;       // output of each neuron
+        vector<float> derivative;   // derivative of sigma( potential )
+        matrix<float> epsilon;      // gradient
+        vector<float> epsilon_bias; // gradient for bias weights
+        vector<float> err_output;   // (d Err / d output) for each neuron
+        // optimizer computations
+        matrix<float> m;    // used for MOMENTUM or first moment in ADAM
+        matrix<float> v;    // used for second moment in ADAM
+        vector<float> m_bias;
+        vector<float> v_bias;
+    
+    public:
+        state( int n, int incoming ) {
+            potential =     vector<float>(n);
+            output =        vector<float>(n);
+            derivative =    vector<float>(n);
+            epsilon_bias =  vector<float>(n);
+            epsilon =       matrix<float>( n, vector<float>(incoming) );
+            err_output =    vector<float>(n);
 
-    layer_state( int n, int incoming ) {
-        potential =     vector<float>(n);
-        output =        vector<float>(n);
-        derivative =    vector<float>(n);
-        epsilon_bias =  vector<float>(n);
-        epsilon =       matrix<float>( n, vector<float>(incoming) );
-        err_output =    vector<float>(n);
-
-        m =       matrix<float>( n, vector<float>(incoming) );
-        v =       matrix<float>( n, vector<float>(incoming) );
-        m_bias =  vector<float>(n);
-        v_bias =  vector<float>(n);
-    }
-};
+            m =       matrix<float>( n, vector<float>(incoming) );
+            v =       matrix<float>( n, vector<float>(incoming) );
+            m_bias =  vector<float>(n);
+            v_bias =  vector<float>(n);
+        }
+    };
 
 public:
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
     : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ) {
         bias =      vector<float>(neuron_count);
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
+        layState =  layer_state( neuron_count, input_count );
     }
 
     // uniform initialization
