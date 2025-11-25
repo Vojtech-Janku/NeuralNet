@@ -5,6 +5,7 @@
 #include <omp.h>
 #include <random>
 #include <vector>
+#include "Layer.hpp"
 
 using namespace std;
 
@@ -81,21 +82,6 @@ void print_matrix( const matrix<T> &mat ) {
 }
 
 // activation functions and their derivatives
-enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
-
-// just for printing
-string get_str( Activation a ) {
-    switch (a) {
-    case Activation::STEP:          return "Step";
-    case Activation::RELU:          return "Relu";
-    case Activation::LEAKY_RELU:    return "Leaky Relu";
-    case Activation::SIGMOID:       return "Sigmoid";
-    case Activation::TANH:          return "Tanh";
-    default:                        return "Unknown";
-    }
-}
-
-// activation functions and their derivatives
 typedef float (*act_fun)(float);
 float step( float x ) { return ( x < 0 ) ? 0 : 1; }
 float relu( float x ) { return ( x < 0 ) ? 0 : x; }
@@ -115,17 +101,6 @@ map< Activation, pair<act_fun, act_fun> > activ_functions = {
     { Activation::TANH,         make_pair(tanh_fun, tanh_diff) }
 };
 
-// layers       TODO: rewrite layers as classes
-enum LayerType{ DEEP, CONVOLUTIONAL };
-// just for printing
-string get_str( Optimizer opt ) {
-    switch (opt) {
-    case LayerType::DEEP:          return "DEEP";
-    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
-    default:                       return "Unknown";
-    }
-}
-
 // optimizers
 enum Optimizer{ GRAD, MOMENTUM, ADAM };
 // just for printing
@@ -137,54 +112,6 @@ string get_str( Optimizer opt ) {
     default:                       return "Unknown";
     }
 }
-
-// structs representing the inner state of the network, same topology as Layer 
-//            (row of neurons and inbound edges)
-// used for storing all computations
-struct layer_state {
-    vector<float> potential;    // potential of each neuron
-    vector<float> output;       // output of each neuron
-    vector<float> derivative;   // derivative of sigma( potential )
-    matrix<float> epsilon;      // gradient
-    vector<float> epsilon_bias; // gradient for bias weights
-    vector<float> err_output;   // (d Err / d output) for each neuron
-    // optimizer computations
-    matrix<float> m;    // used for MOMENTUM or first moment in ADAM
-    matrix<float> v;    // used for second moment in ADAM
-    vector<float> m_bias;
-    vector<float> v_bias;
-
-    layer_state( int n, int incoming ) {
-        potential =     vector<float>(n);
-        output =        vector<float>(n);
-        derivative =    vector<float>(n);
-        epsilon_bias =  vector<float>(n);
-        epsilon =       matrix<float>( n, vector<float>(incoming) );
-        err_output =    vector<float>(n);
-
-        m =       matrix<float>( n, vector<float>(incoming) );
-        v =       matrix<float>( n, vector<float>(incoming) );
-        m_bias =  vector<float>(n);
-        v_bias =  vector<float>(n);
-    }
-};
-
-// struct for layer weights, activation function, weight initializers and other methods
-// a Layer struct consists of a row of neurons and the weights of their inbound edges (coming from previous layer) 
-struct Layer
-{
-    vector<float> bias;
-    matrix<float> weights;
-    float (*activation)(float);         // activation function
-    float (*activ_derivative)(float);   // derivative of activation function
-};
-
-public:
-    Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ) {
-        bias =      vector<float>(neuron_count);
-        weights =   matrix<float>( neuron_count, vector<float>(input_count) );
-    }
 
     // uniform initialization
     // I found experimentally that it's better to initialize biases a bit higher
