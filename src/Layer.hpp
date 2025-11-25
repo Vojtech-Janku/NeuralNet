@@ -21,6 +21,54 @@ public:
         bias =      vector<float>(neuron_count);
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
     }
+
+    // uniform initialization
+    // I found experimentally that it's better to initialize biases a bit higher
+    void initialize_uniform( float min = 0, float max = 0.1 ) {
+        std::default_random_engine generator;
+        std::uniform_real_distribution<float> distribution(min, max);
+        std::uniform_real_distribution<float> bias_distribution(min, 5*max);
+        for ( size_t i = 0; i < weights.size(); i++ ) {
+            for ( auto &w : weights[i] ) {
+                w = distribution(generator);
+            }
+            bias[i] = bias_distribution(generator);
+        }
+    }
+    // gaussian initialization
+    void initialize_gauss( float mean = 0, float stddev = 1 ) {
+        std::default_random_engine generator;
+        std::normal_distribution<float> distribution(mean, stddev);
+        std::normal_distribution<float> bias_distribution(0.01, 0.01);
+        for ( size_t i = 0; i < weights.size(); i++ ) {
+            for ( auto &w : weights[i] ) {
+                w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
+            }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
+            bias[i] = fabs( bias_distribution(generator) );
+        }
+    }
+
+    // the core of feed forward - computes potential and output for this layer
+    void compute_potential( const vector<float> &input, layer_state &lay_state ) {
+        float pot;
+      #pragma omp parallel for num_threads(16)                    // multiprocessing 
+        for ( size_t j = 0; j < bias.size(); j++ ) {
+            pot = 0;
+            for ( size_t i = 0; i < input.size(); i++ ) {
+                pot += ( weights[j][i] * input[i] );
+            }
+            pot += bias[j];
+            lay_state.potential[j] = pot;
+            lay_state.output[j] = activation( pot );
+        }
+    }
+
+    // computes the derivative of activation with current potential - used in backpropagation
+    void compute_derivative( layer_state &lay_state ) {
+        for ( size_t n = 0; n < bias.size(); n++ ) {
+            lay_state.derivative[n] = activ_derivative( lay_state.potential[n] );
+        }
+    }
 };
 
 enum LayerType{ DEEP, CONVOLUTIONAL };
