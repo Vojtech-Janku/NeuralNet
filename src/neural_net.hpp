@@ -106,7 +106,6 @@ class Neural_net
     vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
     vector<Activation> act_funs;
     vector<Layer> layers;
-    vector<layer_state> lay_states;
 
     float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
 
@@ -123,7 +122,6 @@ public:
     //TODO: add LayerType and a logic for Convolutional layer
     void add_layer( size_t layer_size, size_t input_size, Activation a ) {
         layers.push_back(     Layer( layer_size, input_size, a ) );
-        lay_states.push_back( layer_state( layer_size, input_size ) );
     }
 
     void init_unif( float min = 0, float max = 0.1 ) {
@@ -142,51 +140,51 @@ public:
     const vector<float> &feed_forward( const vector<float> &input ) {
         layers[0].compute_potential( input );
         for ( int i = 1; i < layers.size(); i++ ) {
-            layers[i].compute_potential( lay_states[i-1].output );
+            layers[i].compute_potential( layers[i-1].layState.output );
         }
-        return lay_states.back().output;
+        return layers.back().layState.output;
     }
 
     // computes error function output derivatives
     void backpropagation( const vector<float> &target_point ) {
         for ( size_t n = 0; n < net_scheme.back(); n++ ) {  // y_j - d_kj
-            lay_states.back().err_output[n] = lay_states.back().output[n] - target_point[n];
+            layers.back().layState.err_output[n] = layers.back().layState.output[n] - target_point[n];
         }
         for ( int lay = layers.size()-2; lay >= 0; --lay ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
             for ( size_t j = 0; j < net_scheme[lay]; j++ ) {
                 float sum = 0;
                 for ( size_t r = 0; r < net_scheme[lay+1]; r++ ) {
-                    sum += lay_states[lay+1].err_output[r] 
-                        * lay_states[lay+1].derivative[r] 
+                    sum += layers[lay+1].layState.err_output[r] 
+                        * layers[lay+1].layState.derivative[r] 
                         * layers[lay+1].weights[r][j];
                 }
-                lay_states[lay].err_output[j] = sum;
+                layers[lay].layState.err_output[j] = sum;
             }
         }        
     }
 
-    // computes gradient for one layer
-    void compute_epsilon_layer( layer_state &lay_state, const vector<float> &out_prev ) {
+    // computes gradient for one layer TODO: move to Layer.hpp
+    void compute_epsilon_layer( Layer &lay, const vector<float> &out_prev ) {
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < lay_state.output.size(); j++ ) {
+        for ( size_t j = 0; j < lay.layState.output.size(); j++ ) {
             for ( size_t i = 0; i < out_prev.size(); i++ ) {
-                lay_state.epsilon[j][i] +=
-                      lay_state.err_output[j] 
-                    * lay_state.derivative[j] 
+                lay.layState.epsilon[j][i] +=
+                      lay.layState.err_output[j] 
+                    * lay.layState.derivative[j] 
                     * out_prev[i]; 
             }
-            lay_state.epsilon_bias[j] +=
-                  lay_state.err_output[j] 
-                * lay_state.derivative[j];
+            lay.layState.epsilon_bias[j] +=
+                  lay.layState.err_output[j] 
+                * lay.layState.derivative[j];
         }
     }
 
     // computes gradient for whole network, one training example
     void compute_epsilon( const vector<float> &data_row ) {
-        compute_epsilon_layer( lay_states[0], data_row );
+        compute_epsilon_layer( layers[0], data_row );
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
-            compute_epsilon_layer( lay_states[lay], lay_states[lay-1].output );
+            compute_epsilon_layer( layers[lay], layers[lay-1].layState.output );
         }        
     }
 
@@ -201,12 +199,12 @@ public:
     void compute_gradient( const matrix<float> &data, const matrix<float> &labels, 
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
-        for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-            for ( auto &v : lay_states[lay].epsilon ) {
+        for ( Layer &lay : layers ) {
+            for ( auto &v : lay.layState.epsilon ) {
                 fill( v.begin(), v.end(), 0 );
             }
-            fill( lay_states[lay].epsilon_bias.begin(), 
-                  lay_states[lay].epsilon_bias.end(), 0 );
+            fill( lay.layState.epsilon_bias.begin(), 
+                  lay.layState.epsilon_bias.end(), 0 );
         }
         // total squared error
         float err = 0;
@@ -218,8 +216,8 @@ public:
             compute_epsilon( data[k] );
         }
         // average the gradient
-        for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-            mat_div( lay_states[lay].epsilon, batch_range.second-batch_range.first );
+        for ( Layer &lay : layers ) {
+            mat_div( lay.layState.epsilon, batch_range.second-batch_range.first );
         }
     }
     // just overload
@@ -236,13 +234,13 @@ public:
     void compute_adam() {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
-            for ( size_t j = 0; j < net_scheme[lay]; j++ ) {
+            for ( size_t j = 0; j < net_scheme[lay]; j++ ) {    // TODO: replace net_scheme by individual Layer.size()
                 for ( size_t i = 0; i < layers[lay].weights[0].size(); i++ ) {
-                    compute_single_adam( lay_states[lay].m[j][i], lay_states[lay].v[j][i], 
-                                         lay_states[lay].epsilon[j][i], beta1, beta2, eps );
+                    compute_single_adam( layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], 
+                                         layers[lay].layState.epsilon[j][i], beta1, beta2, eps );
                 }
-                compute_single_adam( lay_states[lay].m_bias[j], lay_states[lay].v_bias[j], 
-                                         lay_states[lay].epsilon_bias[j], beta1, beta2, eps );
+                compute_single_adam( layers[lay].layState.m_bias[j], layers[lay].layState.v_bias[j], 
+                                         layers[lay].layState.epsilon_bias[j], beta1, beta2, eps );
             }
         } 
     }
@@ -271,13 +269,13 @@ public:
                     switch (opt)
                     {
                     case Optimizer::GRAD:
-                        update_gradient_descent( layers[lay].weights[j][i], lay_states[lay].epsilon[j][i] );
+                        update_gradient_descent( layers[lay].weights[j][i], layers[lay].layState.epsilon[j][i] );
                         break;
                     case Optimizer::MOMENTUM:
-                        update_momentum( layers[lay].weights[j][i], lay_states[lay].epsilon[j][i], lay_states[lay].m[j][i] );
+                        update_momentum( layers[lay].weights[j][i], layers[lay].layState.epsilon[j][i], layers[lay].layState.m[j][i] );
                         break;
                     case Optimizer::ADAM:
-                        update_adam( layers[lay].weights[j][i], lay_states[lay].m[j][i], lay_states[lay].v[j][i], it );
+                        update_adam( layers[lay].weights[j][i], layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], it );
                         break;
                     }
                 }
@@ -328,7 +326,7 @@ public:
     }
 
     //  ----------  UTILITY FUNCTIONS  ----------
-
+    // TODO: move to Layer
     void set_weights( size_t lay, matrix<float> w ) {
         layers[ lay ].weights = w;
     }
@@ -336,11 +334,7 @@ public:
         layers[ lay ].bias = b;
     }
     void set_potential( size_t lay, vector<float> pot ) {
-        lay_states[ lay ].potential = pot;
-    }
-
-    const layer_state &get_state( int lay ) {
-        return lay_states[lay];
+        layers[ lay ].layState.potential = pot;
     }
 
     int get_layer_count() {
@@ -350,8 +344,8 @@ public:
     float output_squared_error( const vector<float> &target ) {
         float err = 0;
         for ( size_t i = 0; i < net_scheme.back(); i++) {
-            err += ( target[i] - lay_states.back().output[i] ) 
-                 * ( target[i] - lay_states.back().output[i] );
+            err += ( target[i] - layers.back().layState.output[i] ) 
+                 * ( target[i] - layers.back().layState.output[i] );
         }
         return err;
     }
@@ -383,8 +377,8 @@ public:
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
             for ( size_t i = 0; i < net_scheme[lay]; i++ ) {
-                print_vec( lay_states[lay].epsilon[i] );
-                std::cout << "  [ " << lay_states[lay].epsilon_bias[i] << " ]" << endl;
+                print_vec( layers[lay].layState.epsilon[i] );
+                std::cout << "  [ " << layers[lay].layState.epsilon_bias[i] << " ]" << endl;
             }
         }
         std::cout << endl;
@@ -394,7 +388,7 @@ public:
         std::cout << "Output:" << endl;
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            print_vec( lay_states[lay].output );
+            print_vec( layers[lay].layState.output );
             std::cout << endl;
         }
         std::cout << endl;

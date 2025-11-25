@@ -7,46 +7,12 @@ using namespace std;
 template< typename T >
 using matrix = vector<vector<T>>;
 
-// struct representing the inner state of the layer
-// used for storing all computations
-struct layer_state {
-    vector<float> potential;    // potential of each neuron
-    vector<float> output;       // output of each neuron
-    vector<float> derivative;   // derivative of sigma( potential )
-    matrix<float> epsilon;      // gradient
-    vector<float> epsilon_bias; // gradient for bias weights
-    vector<float> err_output;   // (d Err / d output) for each neuron
-    // optimizer computations
-    matrix<float> m;    // used for MOMENTUM or first moment in ADAM
-    matrix<float> v;    // used for second moment in ADAM
-    vector<float> m_bias;
-    vector<float> v_bias;
-
-    layer_state( int n, int incoming ) {
-        potential =     vector<float>(n);
-        output =        vector<float>(n);
-        derivative =    vector<float>(n);
-        epsilon_bias =  vector<float>(n);
-        epsilon =       matrix<float>( n, vector<float>(incoming) );
-        err_output =    vector<float>(n);
-
-        m =       matrix<float>( n, vector<float>(incoming) );
-        v =       matrix<float>( n, vector<float>(incoming) );
-        m_bias =  vector<float>(n);
-        v_bias =  vector<float>(n);
-    }
-};
-
-// struct for layer weights, activation function, weight initializers and other methods
-// a Layer struct consists of a row of neurons and the weights of their inbound edges (coming from previous layer) 
-struct Layer
+// Class representing individual layer of neurons with activation function, bias and weights, and last calculated state.
+// Topologically, a Layer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
+class Layer
 {
-    vector<float> bias;
-    matrix<float> weights;
-    float (*activation)(float);         // activation function
-    float (*activ_derivative)(float);   // derivative of activation function
-    layer_state layState;
-
+    // Struct representing the inner state of the layer.
+    // Used for storing all computations.
     struct state {
         vector<float> potential;    // potential of each neuron
         vector<float> output;       // output of each neuron
@@ -59,8 +25,7 @@ struct Layer
         matrix<float> v;    // used for second moment in ADAM
         vector<float> m_bias;
         vector<float> v_bias;
-    
-    public:
+        
         state( int n, int incoming ) {
             potential =     vector<float>(n);
             output =        vector<float>(n);
@@ -77,6 +42,12 @@ struct Layer
     };
 
 public:
+    vector<float> bias;
+    matrix<float> weights;
+    float (*activation)(float);         // activation function
+    float (*activ_derivative)(float);   // derivative of activation function
+    state layState;
+
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
     : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) {
@@ -111,7 +82,7 @@ public:
     }
 
     // the core of feed forward - computes potential and output for this layer
-    void compute_potential( const vector<float> &input, layer_state &lay_state ) {
+    void compute_potential( const vector<float> &input) {
         float pot;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t j = 0; j < bias.size(); j++ ) {
@@ -120,15 +91,15 @@ public:
                 pot += ( weights[j][i] * input[i] );
             }
             pot += bias[j];
-            lay_state.potential[j] = pot;
-            lay_state.output[j] = activation( pot );
+            layState.potential[j] = pot;
+            layState.output[j] = activation( pot );
         }
     }
 
     // computes the derivative of activation with current potential - used in backpropagation
-    void compute_derivative( layer_state &lay_state ) {
+    void compute_derivative() {
         for ( size_t n = 0; n < bias.size(); n++ ) {
-            lay_state.derivative[n] = activ_derivative( lay_state.potential[n] );
+            layState.derivative[n] = activ_derivative( layState.potential[n] );
         }
     }
 };
