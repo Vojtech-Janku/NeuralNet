@@ -21,3 +21,26 @@ public:
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
     }
 };
+
+enum LayerType{ DEEP, CONVOLUTIONAL };
+// just for printing
+string get_str( LayerType laytp ) {
+    switch (laytp) {
+    case LayerType::DEEP:          return "DEEP";
+    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
+    default:                       return "Unknown";
+    }
+}
+
+enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
+// just for printing
+string get_str( Activation a ) {
+    switch (a) {
+    case Activation::STEP:          return "Step";
+    case Activation::RELU:          return "Relu";
+    case Activation::LEAKY_RELU:    return "Leaky Relu";
+    case Activation::SIGMOID:       return "Sigmoid";
+    case Activation::TANH:          return "Tanh";
+    default:                        return "Unknown";
+    }
+}
