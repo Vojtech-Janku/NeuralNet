@@ -25,7 +25,7 @@ class Layer
         matrix<float> v;    // used for second moment in ADAM
         vector<float> m_bias;
         vector<float> v_bias;
-        
+
         state( int n, int incoming ) {
             potential =     vector<float>(n);
             output =        vector<float>(n);
@@ -53,6 +53,16 @@ public:
       layState( neuron_count, input_count ) {
         bias =      vector<float>(neuron_count);
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
+    }
+
+    void set_biases( vector<float> b ) {
+        bias = b;
+    }
+    void set_weights( matrix<float> w ) {
+        weights = w;
+    }
+    void set_potential( vector<float> pot ) {
+        layState.potential = pot;
     }
 
     // uniform initialization
