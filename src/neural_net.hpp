@@ -164,27 +164,11 @@ public:
         }        
     }
 
-    // computes gradient for one layer TODO: move to Layer.hpp
-    void compute_epsilon_layer( Layer &lay, const vector<float> &out_prev ) {
-      #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < lay.layState.output.size(); j++ ) {
-            for ( size_t i = 0; i < out_prev.size(); i++ ) {
-                lay.layState.epsilon[j][i] +=
-                      lay.layState.err_output[j] 
-                    * lay.layState.derivative[j] 
-                    * out_prev[i]; 
-            }
-            lay.layState.epsilon_bias[j] +=
-                  lay.layState.err_output[j] 
-                * lay.layState.derivative[j];
-        }
-    }
-
     // computes gradient for whole network, one training example
     void compute_epsilon( const vector<float> &data_row ) {
-        compute_epsilon_layer( layers[0], data_row );
+        layers[0].compute_epsilon( data_row );
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
-            compute_epsilon_layer( layers[lay], layers[lay-1].layState.output );
+            layers[lay].compute_epsilon( layers[lay-1].layState.output );
         }        
     }
 
@@ -325,20 +309,8 @@ public:
         return pred;
     }
 
-    //  ----------  UTILITY FUNCTIONS  ----------
-    // TODO: move to Layer
-    void set_weights( size_t lay, matrix<float> w ) {
-        layers[ lay ].weights = w;
-    }
-    void set_biases( size_t lay, vector<float> b ) {
-        layers[ lay ].bias = b;
-    }
-    void set_potential( size_t lay, vector<float> pot ) {
-        layers[ lay ].layState.potential = pot;
-    }
-
     int get_layer_count() {
-        return net_scheme.size();
+        return layers.size();
     }
 
     float output_squared_error( const vector<float> &target ) {

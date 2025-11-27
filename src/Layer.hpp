@@ -112,6 +112,22 @@ public:
             layState.derivative[n] = activ_derivative( layState.potential[n] );
         }
     }
+
+    // computes gradient    TODO: move to layer.state?
+    void compute_epsilon( const vector<float> &out_prev ) {
+      #pragma omp parallel for num_threads(16)                    // multiprocessing 
+        for ( size_t j = 0; j < layState.output.size(); j++ ) {
+            for ( size_t i = 0; i < out_prev.size(); i++ ) {
+                layState.epsilon[j][i] +=
+                      layState.err_output[j] 
+                    * layState.derivative[j] 
+                    * out_prev[i]; 
+            }
+            layState.epsilon_bias[j] +=
+                  layState.err_output[j] 
+                * layState.derivative[j];
+        }
+    }
 };
 
 enum LayerType{ DEEP, CONVOLUTIONAL };
