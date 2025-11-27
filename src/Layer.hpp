@@ -55,6 +55,10 @@ public:
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
     }
 
+    string getType() {
+        return "DEEP";
+    }
+
     void set_biases( vector<float> b ) {
         bias = b;
     }
@@ -130,15 +134,12 @@ public:
     }
 };
 
-enum LayerType{ DEEP, CONVOLUTIONAL };
-// just for printing
-string get_str( LayerType laytp ) {
-    switch (laytp) {
-    case LayerType::DEEP:          return "DEEP";
-    case LayerType::CONVOLUTIONAL: return "CONVOLUTIONAL";
-    default:                       return "Unknown";
+class ConvLayer : Layer
+{
+    string getType() {
+        return "CONVOLUTIONAL";
     }
-}
+};
 
 enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
 // just for printing
