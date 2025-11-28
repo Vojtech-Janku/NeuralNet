@@ -125,6 +125,28 @@ void test_minimal_XOR() {
     std::cout << "PASSED" << endl;
 }
 
+// simple neural net with 1 conv layer
+void test_simple_conv_layer() {
+    std::cout << "Testing simple conv net:" << endl;
+    vector<size_t> scheme = {2, 3, 1};
+    vector<Activation> act = { Activation::STEP, Activation::STEP };
+    vector<LayerType> lays = { LayerType::CONVOLUTIONAL, LayerType::DEEP };
+    Neural_net net( scheme, act );
+        // SET WEIGHTS AND BIASES
+    // net.set_weights( 0, { { 2, 2 }, { -2, -2 } } );
+    // net.set_weights( 1, { { 1, 1 } } );
+    // net.set_biases( 0, { -1, 3 } );
+    // net.set_biases( 1, { -2 } );
+        // DATA
+    matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
+    matrix<float> expected = { {0}, {1}, {1}, {0} };
+        // RESULT
+    for ( size_t i = 0; i < points.size(); i++ ) {
+        assert( net.feed_forward( points[i] ) == expected[i] );
+    }
+    std::cout << "PASSED" << endl;
+}
+
 // XOR solved by a more general network
 void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
     std::cout << "Testing XOR (activation = " << get_str( a ) 
