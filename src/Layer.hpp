@@ -136,9 +136,16 @@ public:
 
 class ConvLayer : Layer
 {
+    int kernel_height;
+    int kernel_width;
+public:
     string getType() {
         return "CONVOLUTIONAL";
     }
+
+    ConvLayer( int neuron_count, int input_count, Activation act = Activation::RELU, int kernel_height, int kernel_width ) 
+    : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width)
+    {}
 };
 
 enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
