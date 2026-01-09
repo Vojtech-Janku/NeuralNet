@@ -104,7 +104,7 @@ public:
     void compute_potential( const vector<float> &input) {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < bias.size(); j++ ) {
+        for ( size_t j = 0; j < getSize(); j++ ) {
             potential = 0;
             for ( size_t i = 0; i < input.size(); i++ ) {
                 potential += ( weights[j][i] * input[i] );
@@ -117,7 +117,7 @@ public:
 
     // computes the derivative of activation with current potential - used in backpropagation
     void compute_derivative() {
-        for ( size_t n = 0; n < bias.size(); n++ ) {
+        for ( size_t n = 0; n < getSize(); n++ ) {
             layState.derivative[n] = activ_derivative( layState.potential[n] );
         }
     }
@@ -155,7 +155,7 @@ public:
     void compute_potential( const vector<float> &input) {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < bias.size(); j++ ) {
+        for ( size_t j = 0; j < getSize(); j++ ) {
             potential = 0;
             for ( size_t i = 0; i < input.size(); i++ ) {
                 potential += ( weights[j][i] * input[i] );
