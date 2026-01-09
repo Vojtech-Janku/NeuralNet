@@ -13,7 +13,8 @@ class Layer
 {
     // Struct representing the inner state of the layer.
     // Used for storing all computations.
-    struct state {
+    struct state 
+    {
         vector<float> potential;    // potential of each neuron
         vector<float> output;       // output of each neuron
         vector<float> derivative;   // derivative of sigma( potential )
@@ -26,7 +27,8 @@ class Layer
         vector<float> m_bias;
         vector<float> v_bias;
 
-        state( int n, int incoming ) {
+        state( int n, int incoming ) 
+        {
             potential =     vector<float>(n);
             output =        vector<float>(n);
             derivative =    vector<float>(n);
@@ -50,12 +52,14 @@ public:
 
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
     : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
-      layState( neuron_count, input_count ) {
+      layState( neuron_count, input_count ) 
+    {
         bias =      vector<float>(neuron_count);
         weights =   matrix<float>( neuron_count, vector<float>(input_count) );
     }
 
-    string getType() {
+    string getType()
+    {
         return "DEEP";
     }
 
@@ -64,36 +68,45 @@ public:
         return bias.size();
     }
 
-    void set_biases( vector<float> b ) {
+    void set_biases( vector<float> b )
+    {
         bias = b;
     }
-    void set_weights( matrix<float> w ) {
+    void set_weights( matrix<float> w )
+    {
         weights = w;
     }
-    void set_potential( vector<float> pot ) {
+    void set_potential( vector<float> pot )
+    {
         layState.potential = pot;
     }
 
     // uniform initialization
     // I found experimentally that it's better to initialize biases a bit higher
-    void initialize_uniform( float min = 0, float max = 0.1 ) {
+    void initialize_uniform( float min = 0, float max = 0.1 )
+    {
         std::default_random_engine generator;
         std::uniform_real_distribution<float> distribution(min, max);
         std::uniform_real_distribution<float> bias_distribution(min, 5*max);
-        for ( size_t i = 0; i < weights.size(); i++ ) {
-            for ( auto &w : weights[i] ) {
+        for ( size_t i = 0; i < weights.size(); i++ ) 
+        {
+            for ( auto &w : weights[i] ) 
+            {
                 w = distribution(generator);
             }
             bias[i] = bias_distribution(generator);
         }
     }
     // gaussian initialization
-    void initialize_gauss( float mean = 0, float stddev = 1 ) {
+    void initialize_gauss( float mean = 0, float stddev = 1 ) 
+    {
         std::default_random_engine generator;
         std::normal_distribution<float> distribution(mean, stddev);
         std::normal_distribution<float> bias_distribution(0.01, 0.01);
-        for ( size_t i = 0; i < weights.size(); i++ ) {
-            for ( auto &w : weights[i] ) {
+        for ( size_t i = 0; i < weights.size(); i++ ) 
+        {
+            for ( auto &w : weights[i] ) 
+            {
                 w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
             }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
             bias[i] = fabs( bias_distribution(generator) );
@@ -101,12 +114,15 @@ public:
     }
 
     // the core of feed forward - computes potential and output for this layer
-    void compute_potential( const vector<float> &input) {
+    void compute_potential( const vector<float> &input) 
+    {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < getSize(); j++ ) {
+        for ( size_t j = 0; j < getSize(); j++ ) 
+        {
             potential = 0;
-            for ( size_t i = 0; i < input.size(); i++ ) {
+            for ( size_t i = 0; i < input.size(); i++ ) 
+            {
                 potential += ( weights[j][i] * input[i] );
             }
             potential += bias[j];
@@ -117,16 +133,20 @@ public:
 
     // computes the derivative of activation with current potential - used in backpropagation
     void compute_derivative() {
-        for ( size_t n = 0; n < getSize(); n++ ) {
+        for ( size_t n = 0; n < getSize(); n++ ) 
+        {
             layState.derivative[n] = activ_derivative( layState.potential[n] );
         }
     }
 
     // computes gradient    TODO: move to layer.state?
-    void compute_epsilon( const vector<float> &out_prev ) {
+    void compute_epsilon( const vector<float> &out_prev ) 
+    {
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < layState.output.size(); j++ ) {
-            for ( size_t i = 0; i < out_prev.size(); i++ ) {
+        for ( size_t j = 0; j < layState.output.size(); j++ ) 
+        {
+            for ( size_t i = 0; i < out_prev.size(); i++ ) 
+            {
                 layState.epsilon[j][i] +=
                       layState.err_output[j] 
                     * layState.derivative[j] 
@@ -144,7 +164,8 @@ class ConvLayer : Layer
     int kernel_height;
     int kernel_width;
 public:
-    string getType() {
+    string getType() 
+    {
         return "CONVOLUTIONAL";
     }
 
@@ -152,12 +173,15 @@ public:
     : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width)
     {}
 
-    void compute_potential( const vector<float> &input) {
+    void compute_potential( const vector<float> &input) 
+    {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < getSize(); j++ ) {
+        for ( size_t j = 0; j < getSize(); j++ ) 
+        {
             potential = 0;
-            for ( size_t i = 0; i < input.size(); i++ ) {
+            for ( size_t i = 0; i < input.size(); i++ ) 
+            {
                 potential += ( weights[j][i] * input[i] );
             }
             potential += bias[j];
@@ -169,7 +193,8 @@ public:
 
 enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
 // just for printing
-string get_str( Activation act ) {
+string get_str( Activation act ) 
+{
     switch (act) {
     case Activation::STEP:          return "Step";
     case Activation::RELU:          return "Relu";
