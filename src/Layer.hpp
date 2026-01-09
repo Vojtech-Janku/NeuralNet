@@ -163,30 +163,31 @@ class ConvLayer : Layer
 {
     int kernel_height;
     int kernel_width;
+    bool cutoff;
 public:
     string getType() 
     {
         return "CONVOLUTIONAL";
     }
 
-    ConvLayer( int neuron_count, int input_count, Activation act = Activation::RELU, int kernel_height, int kernel_width ) 
-    : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width)
+    ConvLayer( int neuron_count, int input_count, Activation act = Activation::RELU, int kernel_height, int kernel_width, bool cutoff ) 
+    : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width), cutoff(cutoff)
     {}
 
     void compute_potential( const vector<float> &input) 
     {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < getSize(); j++ ) 
+        for ( size_t neuron_idx = 0; neuron_idx < getSize(); neuron_idx++ ) 
         {
             potential = 0;
             for ( size_t i = 0; i < input.size(); i++ ) 
             {
-                potential += ( weights[j][i] * input[i] );
+                potential += ( weights[neuron_idx][i] * input[i] );
             }
-            potential += bias[j];
-            layState.potential[j] = potential;
-            layState.output[j] = activation( potential );
+            potential += bias[neuron_idx];
+            layState.potential[neuron_idx] = potential;
+            layState.output[neuron_idx] = activation( potential );
         }
     }
 };
