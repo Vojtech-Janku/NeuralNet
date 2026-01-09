@@ -59,6 +59,11 @@ public:
         return "DEEP";
     }
 
+    int getSize()
+    {
+        return bias.size();
+    }
+
     void set_biases( vector<float> b ) {
         bias = b;
     }
@@ -97,16 +102,16 @@ public:
 
     // the core of feed forward - computes potential and output for this layer
     void compute_potential( const vector<float> &input) {
-        float pot;
+        float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t j = 0; j < bias.size(); j++ ) {
-            pot = 0;
+            potential = 0;
             for ( size_t i = 0; i < input.size(); i++ ) {
-                pot += ( weights[j][i] * input[i] );
+                potential += ( weights[j][i] * input[i] );
             }
-            pot += bias[j];
-            layState.potential[j] = pot;
-            layState.output[j] = activation( pot );
+            potential += bias[j];
+            layState.potential[j] = potential;
+            layState.output[j] = activation( potential );
         }
     }
 
@@ -146,12 +151,26 @@ public:
     ConvLayer( int neuron_count, int input_count, Activation act = Activation::RELU, int kernel_height, int kernel_width ) 
     : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width)
     {}
+
+    void compute_potential( const vector<float> &input) {
+        float potential;
+      #pragma omp parallel for num_threads(16)                    // multiprocessing 
+        for ( size_t j = 0; j < bias.size(); j++ ) {
+            potential = 0;
+            for ( size_t i = 0; i < input.size(); i++ ) {
+                potential += ( weights[j][i] * input[i] );
+            }
+            potential += bias[j];
+            layState.potential[j] = potential;
+            layState.output[j] = activation( potential );
+        }
+    }
 };
 
 enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
 // just for printing
-string get_str( Activation a ) {
-    switch (a) {
+string get_str( Activation act ) {
+    switch (act) {
     case Activation::STEP:          return "Step";
     case Activation::RELU:          return "Relu";
     case Activation::LEAKY_RELU:    return "Leaky Relu";
