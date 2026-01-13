@@ -174,6 +174,7 @@ public:
     : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width), cutoff(cutoff)
     {}
 
+    // TODO: decide if I want to multiply sparse matrix or have a compact weight matrix with specific logic
     void compute_potential( const vector<float> &input) 
     {
         float potential;
