@@ -111,10 +111,10 @@ void test_minimal_XOR() {
     vector<Activation> act = { Activation::STEP, Activation::STEP };
     Neural_net net( scheme, act );
         // SET WEIGHTS AND BIASES
-    net.set_weights( 0, { { 2, 2 }, { -2, -2 } } );
-    net.set_weights( 1, { { 1, 1 } } );
-    net.set_biases( 0, { -1, 3 } );
-    net.set_biases( 1, { -2 } );
+    net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 } } );
+    net.getLayers().at(1).set_weights( { { 1, 1 } } );
+    net.getLayers().at(0).set_biases( { -1, 3 } );
+    net.getLayers().at(1).set_biases( { -2 } );
         // DATA
     matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
     matrix<float> expected = { {0}, {1}, {1}, {0} };
@@ -130,7 +130,6 @@ void test_simple_conv_layer() {
     std::cout << "Testing simple conv net:" << endl;
     vector<size_t> scheme = {2, 3, 1};
     vector<Activation> act = { Activation::STEP, Activation::STEP };
-    vector<LayerType> lays = { LayerType::CONVOLUTIONAL, LayerType::DEEP };
     Neural_net net( scheme, act );
         // SET WEIGHTS AND BIASES
     // net.set_weights( 0, { { 2, 2 }, { -2, -2 } } );

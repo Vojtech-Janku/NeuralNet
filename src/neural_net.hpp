@@ -95,9 +95,8 @@ string get_str( Optimizer opt ) {
 }
 
 // Neural_net - the class for the whole neural network.
-// Contains all layers and their states, parameter values,
-//  feed forward function, functions needed for computing gradient,
-//  train and predict functions and more!
+// Contains all layers, feed forward function,
+//  train and predict functions
 class Neural_net
 {
     float learning_rate, lr_decay;
@@ -117,6 +116,11 @@ public:
         for ( int i = 1; i < scheme.size(); i++ ) {
             add_layer( scheme[i], scheme[i-1], act_funs[i-1] );
         }
+    }
+
+    vector<Layer> &getLayers()
+    {
+        return layers;
     }
 
     //TODO: add LayerType and a logic for Convolutional layer
