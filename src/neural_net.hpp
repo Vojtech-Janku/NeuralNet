@@ -109,6 +109,9 @@ class Neural_net
     float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
 
 public:
+    Neural_net( size_t input_size)
+    : learning_rate(0.01), lr_decay(0.001), momentum(0.5), input_size(input_size) {}
+
     Neural_net( vector<size_t> scheme, vector<Activation> funs, float l_rate = 0.01, float l_decay = 0.001, float moment = 0.5 ) 
     : learning_rate( l_rate ), lr_decay( l_decay ), momentum(moment), input_size( scheme[0] ), 
       net_scheme( scheme.begin()+1, scheme.end() ), act_funs( funs ) {
@@ -118,12 +121,18 @@ public:
         }
     }
 
+    vector<size_t> getScheme()
+    {
+        return net_scheme;
+    }
+
     vector<Layer> &getLayers()
     {
         return layers;
     }
 
     //TODO: add LayerType and a logic for Convolutional layer
+    //TODO: dont need to specify input size every time, can get it from previous layer
     void add_layer( size_t layer_size, size_t input_size, Activation a ) {
         layers.push_back(     Layer( layer_size, input_size, a ) );
     }

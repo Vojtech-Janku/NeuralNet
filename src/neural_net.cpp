@@ -107,9 +107,12 @@ float get_accuracy( const vector<int> &pred, const vector<int> &target ) {
 // minimal XOR from lecture, with step activation function
 void test_minimal_XOR() {
     std::cout << "Testing minimal (lecture) XOR:" << endl;
-    vector<size_t> scheme = {2, 2, 1};
-    vector<Activation> act = { Activation::STEP, Activation::STEP };
-    Neural_net net( scheme, act );
+    // vector<size_t> scheme = {2, 2, 1};
+    // vector<Activation> act = { Activation::STEP, Activation::STEP };
+    // Neural_net net( scheme, act );
+    Neural_net net( 2 );
+    net.add_layer( 2, 2, Activation::STEP );
+    net.add_layer( 1, 2, Activation::STEP );
         // SET WEIGHTS AND BIASES
     net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 } } );
     net.getLayers().at(1).set_weights( { { 1, 1 } } );
@@ -128,14 +131,18 @@ void test_minimal_XOR() {
 // simple neural net with 1 conv layer
 void test_simple_conv_layer() {
     std::cout << "Testing simple conv net:" << endl;
-    vector<size_t> scheme = {2, 3, 1};
-    vector<Activation> act = { Activation::STEP, Activation::STEP };
-    Neural_net net( scheme, act );
+    // vector<size_t> scheme = {2, 3, 1};
+    // vector<Activation> act = { Activation::STEP, Activation::STEP };
+    // Neural_net net( scheme, act );
+
+    Neural_net net( 2 );
+    net.add_layer( 3, 2, Activation::RELU );
+    net.add_layer( 1, 3, Activation::RELU );
         // SET WEIGHTS AND BIASES
-    // net.set_weights( 0, { { 2, 2 }, { -2, -2 } } );
-    // net.set_weights( 1, { { 1, 1 } } );
-    // net.set_biases( 0, { -1, 3 } );
-    // net.set_biases( 1, { -2 } );
+    net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 }, {1, -1} } );
+    net.getLayers().at(1).set_weights( { { 1, 1, 1 } } );
+    net.getLayers().at(0).set_biases( { -1, 3, 0 } );
+    net.getLayers().at(1).set_biases( { -2 } );
         // DATA
     matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
     matrix<float> expected = { {0}, {1}, {1}, {0} };
