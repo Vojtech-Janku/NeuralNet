@@ -137,6 +137,10 @@ public:
         layers.push_back(     Layer( layer_size, input_size, a ) );
     }
 
+    void add_layer( size_t layer_size, Activation a ) {
+        layers.push_back(     Layer( layer_size, getLayers().back().getSize(), a ) );
+    }
+
     void init_unif( float min = 0, float max = 0.1 ) {
         for ( auto &lay : layers ) { lay.initialize_uniform(min, max); }
     }
