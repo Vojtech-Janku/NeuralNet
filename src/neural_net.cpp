@@ -111,8 +111,8 @@ void test_minimal_XOR() {
     // vector<Activation> act = { Activation::STEP, Activation::STEP };
     // Neural_net net( scheme, act );
     Neural_net net( 2 );
-    net.add_layer( 2, 2, Activation::STEP );
-    net.add_layer( 1, 2, Activation::STEP );
+    net.add_layer( 2, Activation::STEP );
+    net.add_layer( 1, Activation::STEP );
         // SET WEIGHTS AND BIASES
     net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 } } );
     net.getLayers().at(1).set_weights( { { 1, 1 } } );
@@ -136,8 +136,8 @@ void test_simple_conv_layer() {
     // Neural_net net( scheme, act );
 
     Neural_net net( 2 );
-    net.add_layer( 3, 2, Activation::RELU );
-    net.add_layer( 1, 3, Activation::RELU );
+    net.add_layer( 3, Activation::RELU );
+    net.add_layer( 1, Activation::RELU );
         // SET WEIGHTS AND BIASES
     net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 }, {1, -1} } );
     net.getLayers().at(1).set_weights( { { 1, 1, 1 } } );

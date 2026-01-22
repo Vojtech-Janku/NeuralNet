@@ -131,11 +131,11 @@ public:
         return layers;
     }
 
-    //TODO: add LayerType and a logic for Convolutional layer
-    //TODO: dont need to specify input size every time, can get it from previous layer
-    void add_layer( size_t layer_size, size_t input_size, Activation a ) {
-        layers.push_back(     Layer( layer_size, input_size, a ) );
-    }
+    // TODO: add LayerType and a logic for Convolutional layer
+    // TODO: dont need to specify input size every time, can get it from previous layer
+    //void add_layer( size_t layer_size, size_t input_size, Activation a ) {
+    //    layers.push_back(     Layer( layer_size, input_size, a ) );
+    //}
 
     void add_layer( size_t layer_size, Activation a ) {
         layers.push_back(     Layer( layer_size, getLayers().back().getSize(), a ) );
