@@ -117,7 +117,7 @@ public:
       net_scheme( scheme.begin()+1, scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
         for ( int i = 1; i < scheme.size(); i++ ) {
-            add_layer( scheme[i], scheme[i-1], act_funs[i-1] );
+            add_layer( scheme[i], act_funs[i-1] );
         }
     }
 
@@ -138,7 +138,8 @@ public:
     //}
 
     void add_layer( size_t layer_size, Activation a ) {
-        layers.push_back(     Layer( layer_size, getLayers().back().getSize(), a ) );
+        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
+        layers.push_back(     Layer( layer_size, layer_input, a ) );
     }
 
     void init_unif( float min = 0, float max = 0.1 ) {
