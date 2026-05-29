@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-//#include <omp.h>
+#include <omp.h>
 #include <random>
 #include <vector>
 #include "Layer.hpp"
@@ -114,7 +114,7 @@ public:
 
     Neural_net( vector<size_t> scheme, vector<Activation> funs, float l_rate = 0.01, float l_decay = 0.001, float moment = 0.5 ) 
     : learning_rate( l_rate ), lr_decay( l_decay ), momentum(moment), input_size( scheme[0] ), 
-      net_scheme( scheme.begin()+1, scheme.end() ), act_funs( funs ) {
+      net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
         for ( int i = 1; i < scheme.size(); i++ ) {
             add_layer( scheme[i], act_funs[i-1] );
@@ -165,14 +165,14 @@ public:
 
     // computes error function output derivatives
     void backpropagation( const vector<float> &target_point ) {
-        for ( size_t n = 0; n < net_scheme.back(); n++ ) {  // y_j - d_kj
+        for ( size_t n = 0; n < layers.back().getSize(); n++ ) {  // y_j - d_kj
             layers.back().layState.err_output[n] = layers.back().layState.output[n] - target_point[n];
         }
         for ( int lay = layers.size()-2; lay >= 0; --lay ) {
-          #pragma omp parallel for num_threads(16)                    // multiprocessing 
-            for ( size_t j = 0; j < net_scheme[lay]; j++ ) {
+          #pragma omp parallel for num_threads(16)                    // multiprocessing
+            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
                 float sum = 0;
-                for ( size_t r = 0; r < net_scheme[lay+1]; r++ ) {
+                for ( size_t r = 0; r < layers[lay+1].getSize(); r++ ) {
                     sum += layers[lay+1].layState.err_output[r] 
                         * layers[lay+1].layState.derivative[r] 
                         * layers[lay+1].weights[r][j];
@@ -209,7 +209,7 @@ public:
                   lay.layState.epsilon_bias.end(), 0 );
         }
         // total squared error
-        float err = 0;
+        //      float err = 0;
         // go through training data
         for ( size_t k = batch_range.first; k < batch_range.second; k++ ) {
             feed_forward( data[k] );
@@ -236,7 +236,7 @@ public:
     void compute_adam() {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
-            for ( size_t j = 0; j < net_scheme[lay]; j++ ) {    // TODO: replace net_scheme by individual Layer.size()
+            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
                 for ( size_t i = 0; i < layers[lay].weights[0].size(); i++ ) {
                     compute_single_adam( layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], 
                                          layers[lay].layState.epsilon[j][i], beta1, beta2, eps );
@@ -265,8 +265,8 @@ public:
     // updates all weights
     void modify_weights( Optimizer opt, const size_t &it = 0 ) {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-          #pragma omp parallel for num_threads(16)                    // multiprocessing 
-            for ( size_t j = 0; j < net_scheme[lay]; j++ ) {
+          #pragma omp parallel for num_threads(16)                    // multiprocessing
+            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
                 for ( size_t i = 0; i < layers[lay].weights[0].size(); i++ ) {
                     switch (opt)
                     {
@@ -354,7 +354,7 @@ public:
         std::cout << "Weights:" << endl;
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            for ( size_t i = 0; i < net_scheme[lay]; i++ ) {
+            for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
                 print_vec( layers[lay].weights[i] );
                 std::cout << "  [ " << layers[lay].bias[i] << " ]" << endl;
             }
@@ -366,7 +366,7 @@ public:
         std::cout << "Gradient:" << endl;
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            for ( size_t i = 0; i < net_scheme[lay]; i++ ) {
+            for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
                 print_vec( layers[lay].layState.epsilon[i] );
                 std::cout << "  [ " << layers[lay].layState.epsilon_bias[i] << " ]" << endl;
             }

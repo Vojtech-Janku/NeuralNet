@@ -220,8 +220,8 @@ int main() {
 
     // READING DATA
     std::cout << "- Loading data..." << endl;
-    auto train_vectors =    read_data("../data/fashion_mnist_train_vectors.csv", ',');
-    auto train_labels =     get_column( read_data("../data/fashion_mnist_train_labels.csv", ','), 0 );
+    auto train_vectors =    read_data("data/fashion_mnist_train_vectors.csv", ',');
+    auto train_labels =     get_column( read_data("data/fashion_mnist_train_labels.csv", ','), 0 );
 
         // DATA TRANSFORMATIONS
     std::cout << "- Transforming data..." << endl;
@@ -250,7 +250,7 @@ int main() {
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );
     export_data( "../train_predictions.csv", train_pred );
-    auto test_data = scale( read_data("../data/fashion_mnist_test_vectors.csv", ','), 255 ) ;
+    auto test_data = scale( read_data("data/fashion_mnist_test_vectors.csv", ','), 255 ) ;
     auto test_pred = get_max_idx( net.predict( test_data ) );
     export_data( "../test_predictions.csv", test_pred );
 
