@@ -249,21 +249,25 @@ int main() {
 
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );
-    export_data( "../train_predictions.csv", train_pred );
-    auto test_data = scale( read_data("data/fashion_mnist_test_vectors.csv", ','), 255 ) ;
+    export_data( "data/train_predictions.csv", train_pred );
+    auto test_vectors = read_data("data/fashion_mnist_test_vectors.csv", ',');
+    auto test_labels = get_column( read_data("data/fashion_mnist_test_labels.csv", ','), 0 );
+    auto test_data = scale( test_vectors, 255 ) ;
+    auto test_target = transform_index( test_labels, 10 );
+
     auto test_pred = get_max_idx( net.predict( test_data ) );
-    export_data( "../test_predictions.csv", test_pred );
+    export_data( "data/test_predictions.csv", test_pred );
 
         // MODEL EVALUATION
     // using test data for the purpose of calculating and printing accuracy
     // - !!! COMMENT THIS SECTION BEFORE SUBMITTING !!!
-    /*
+    
     std::cout << "- Model Evaluation" << endl;
     // train pred accuracy
     std::cout << "Training set accuracy:   " << get_accuracy( train_pred, train_labels ) << endl;
     // test pred accuracy
     std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test_labels ) << endl;
-    */
+    
     std::cout << "DONE" << endl;
     return 0;
 }
