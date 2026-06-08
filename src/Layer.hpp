@@ -17,6 +17,7 @@ string get_str( Activation act )
     case Activation::LEAKY_RELU:    return "Leaky Relu";
     case Activation::SIGMOID:       return "Sigmoid";
     case Activation::TANH:          return "Tanh";
+    case Activation::SOFTMAX:       return "Softmax";
     default:                        return "Unknown";
     }
 }
@@ -80,12 +81,13 @@ class Layer
 public:
     vector<float> bias;
     matrix<float> weights;
+    Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
     state layState;
 
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
+    : act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
     {
         bias =      vector<float>(neuron_count);
