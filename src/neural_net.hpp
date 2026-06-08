@@ -116,7 +116,7 @@ public:
     : learning_rate( l_rate ), lr_decay( l_decay ), momentum(moment), input_size( scheme[0] ), 
       net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
-        for ( int i = 1; i < scheme.size(); i++ ) {
+        for ( size_t i = 1; i < scheme.size(); i++ ) {
             add_layer( scheme[i], act_funs[i-1] );
         }
     }
@@ -157,7 +157,7 @@ public:
     // basic feed forward algorithm
     const vector<float> &feed_forward( const vector<float> &input ) {
         layers[0].compute_potential( input );
-        for ( int i = 1; i < layers.size(); i++ ) {
+        for ( size_t i = 1; i < layers.size(); i++ ) {
             layers[i].compute_potential( layers[i-1].layState.output );
         }
         return layers.back().layState.output;
