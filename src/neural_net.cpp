@@ -232,7 +232,7 @@ int main() {
     std::cout << "- Neural Net" << endl;
     size_t input_size = train_vectors[0].size();
     vector<size_t> scheme = { input_size, 50, 30, 10 };
-    vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::RELU };
+    vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SIGMOID };
     // hyper parameters
     float learning_rate = 0.1, lr_decay = 0.0002, moment = 0.5;
     Neural_net net = make_model( scheme, act, learning_rate, lr_decay, moment );
