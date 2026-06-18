@@ -147,10 +147,9 @@ public:
     }
 
     void init_gauss() {
-        layers[0].initialize_gauss( 0, sqrt(2.0/input_size) );
-        for (size_t i = 1; i < layers.size(); i++)
+        for ( auto &lay : layers )
         {
-            layers[i].initialize_gauss(0, sqrt(2.0/net_scheme[i-1]));
+            lay.initialize_gauss( 0, sqrt( 2.0 / lay.getInputSize() ) );
         }
     }
 
