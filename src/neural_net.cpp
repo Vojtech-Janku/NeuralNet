@@ -231,17 +231,20 @@ int main() {
         //  CREATE NEW NEURAL NET
     std::cout << "- Neural Net" << endl;
     size_t input_size = train_vectors[0].size();
-    vector<size_t> scheme = { input_size, 50, 30, 10 };
+    size_t output_size = 10;
+    //vector<size_t> scheme = { input_size, 50, 30, output_size };
+    //vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SIGMOID };
+    vector<size_t> scheme = { input_size, 64, 30, output_size };
     vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SIGMOID };
     // hyper parameters
-    float learning_rate = 0.1, lr_decay = 0.0002, moment = 0.5;
+    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9; //float learning_rate = 0.1, lr_decay = 0.0002, moment = 0.5;
     Neural_net net = make_model( scheme, act, learning_rate, lr_decay, moment );
-    net.init_unif( 0, 2.0 / input_size );
-    //net.init_gauss();
+    //net.init_unif( 0, 2.0 / input_size );
+    net.init_gauss();
 
         // LEARNING
     std::cout << "- Model Learning" << endl;
-    size_t batch_size = 20;
+    size_t batch_size = 64;
     float prec = 0.1;
     size_t epochs = 20;
     Optimizer opt = Optimizer::MOMENTUM;
