@@ -22,6 +22,8 @@ string get_str( Activation act )
     }
 }
 
+//typedef std::vector<float> (*vector_function)(std::vector<float> &);
+
 // activation functions and their derivatives
 typedef float (*act_fun)(float);
 float step( float x ) { return ( x < 0 ) ? 0 : 1; }
@@ -84,6 +86,8 @@ public:
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
+    //vector_function activ_function;
+    //vector_function deriv_function;
     state layState;
 
     Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
@@ -102,6 +106,11 @@ public:
     size_t getSize()
     {
         return bias.size();
+    }
+
+    size_t getInputSize()
+    {
+        return weights[0].size();
     }
 
     void set_biases( vector<float> b )
@@ -133,19 +142,21 @@ public:
             bias[i] = bias_distribution(generator);
         }
     }
-    // gaussian initialization
+    // gaussian initialization //TODO: separate weights and biases initial distribution
     void initialize_gauss( float mean = 0, float stddev = 1 ) 
     {
         std::default_random_engine generator;
         std::normal_distribution<float> distribution(mean, stddev);
-        std::normal_distribution<float> bias_distribution(0.01, 0.01);
+        //std::normal_distribution<float> bias_distribution(0.01, 0.01);
+        std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
         for ( size_t i = 0; i < weights.size(); i++ ) 
         {
             for ( auto &w : weights[i] ) 
             {
-                w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
+                w = distribution(generator);
+                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
             }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
-            bias[i] = fabs( bias_distribution(generator) );
+            bias[i] = bias_distribution(generator);
         }
     }
 
@@ -162,7 +173,20 @@ public:
             }
             potential += bias[j];
             layState.potential[j] = potential;
-            layState.output[j] = activation( potential );
+        }
+        if (act == SOFTMAX) {
+            float sum = 0;
+            for ( size_t j = 0; j < getSize(); j++ ) {
+                layState.output[j] = exp(layState.potential[j]);
+                sum += layState.output[j];
+            }
+            for ( size_t j = 0; j < getSize(); j++ ) {
+                layState.output[j] /= sum;
+            }
+        } else {
+            for ( size_t j = 0; j < getSize(); j++ ) {
+                layState.output[j] = activation( layState.potential[j] );
+            }
         }
     }
 
@@ -170,7 +194,13 @@ public:
     void compute_derivative() {
         for ( size_t n = 0; n < getSize(); n++ ) 
         {
-            layState.derivative[n] = activ_derivative( layState.potential[n] );
+            if (act == SOFTMAX) {
+                for ( size_t j = 0; j < getSize(); j++ ) {
+                    // TODO: implement softmax derivative
+                }
+            } else {
+                layState.derivative[n] = activ_derivative( layState.potential[n] );
+            }
         }
     }
 
