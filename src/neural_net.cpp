@@ -201,8 +201,8 @@ void train_model( Neural_net &net, matrix<float> &train_data, matrix<float> &tra
         << chrono::duration_cast<chrono::seconds>(end - start).count() % 60 << "sec" << endl;    
 }
 
-int main() {
-    std::cout << "Neural network - feed-forward MLP" << endl;
+void execute_final_workflow() {
+   std::cout << "Neural network - feed-forward MLP" << endl;
 
     // TESTS
     //test_minimal_XOR();
@@ -271,6 +271,11 @@ int main() {
     // test pred accuracy
     std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test_labels ) << endl;
     
-    std::cout << "DONE" << endl;
+    std::cout << "DONE" << endl; 
+}
+
+
+int main() {
+    execute_final_workflow();
     return 0;
 }
