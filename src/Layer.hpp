@@ -8,7 +8,22 @@ using namespace std;
 template< typename T >
 using matrix = vector<vector<T>>;
 
+class Layer
+{
+public:
+    virtual string getType() = 0;
+    virtual string getSize() = 0;
 
+    virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
+    virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
+
+    virtual void compute_potential( const vector<float> &input) = 0;
+    virtual void compute_derivative() = 0;
+    virtual void compute_epsilon( const vector<float> &out_prev ) = 0;
+
+
+    virtual ~Layer() {}
+};
 
 // Class representing individual layer of neurons with activation function, bias and weights, and last calculated state.
 // Topologically, a DeepLayer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
