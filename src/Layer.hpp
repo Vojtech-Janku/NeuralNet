@@ -205,7 +205,7 @@ public:
     }
 };
 
-class ConvLayer : DeepLayer
+class ConvLayer : Layer
 {
     int input_height;
     int input_width;
@@ -221,8 +221,7 @@ public:
     }
 
     ConvLayer( int input_height, int input_width, int C_in, int C_out, 
-        int kernel_size, int stride, bool padding, Activation act )
-    : DeepLayer( kernel_size*kernel_size*C_out, input_height*input_width*C_in, act ), 
+        int kernel_size, int stride, bool padding, Activation act ) :
     input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
     kernel_size(kernel_size), stride(stride), padding(padding)
     {}
