@@ -31,7 +31,7 @@ class Neural_net
     size_t input_size;         // number of neurons in input layer
     vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
     vector<Activation> act_funs;
-    vector<Layer> layers;
+    vector<DeepLayer> layers;
 
     float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
 
@@ -53,7 +53,7 @@ public:
         return net_scheme;
     }
 
-    vector<Layer> &getLayers()
+    vector<DeepLayer> &getLayers()
     {
         return layers;
     }
@@ -61,12 +61,12 @@ public:
     // TODO: add LayerType and a logic for Convolutional layer
     // TODO: dont need to specify input size every time, can get it from previous layer
     //void add_layer( size_t layer_size, size_t input_size, Activation a ) {
-    //    layers.push_back(     Layer( layer_size, input_size, a ) );
+    //    layers.push_back(     DeepLayer( layer_size, input_size, a ) );
     //}
 
     void add_layer( size_t layer_size, Activation a ) {
         size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
-        layers.push_back(     Layer( layer_size, layer_input, a ) );
+        layers.push_back(     DeepLayer( layer_size, layer_input, a ) );
     }
 
     void init_unif( float min = 0, float max = 0.1 ) {
@@ -127,7 +127,7 @@ public:
     void compute_gradient( const matrix<float> &data, const matrix<float> &labels, 
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
-        for ( Layer &lay : layers ) {
+        for ( DeepLayer &lay : layers ) {
             for ( auto &v : lay.layState.epsilon ) {
                 fill( v.begin(), v.end(), 0 );
             }
@@ -144,7 +144,7 @@ public:
             compute_epsilon( data[k] );
         }
         // average the gradient
-        for ( Layer &lay : layers ) {
+        for ( DeepLayer &lay : layers ) {
             mat_div( lay.layState.epsilon, batch_range.second-batch_range.first );
         }
     }

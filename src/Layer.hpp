@@ -11,8 +11,8 @@ using matrix = vector<vector<T>>;
 
 
 // Class representing individual layer of neurons with activation function, bias and weights, and last calculated state.
-// Topologically, a Layer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
-class Layer
+// Topologically, a DeepLayer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
+class DeepLayer
 {
     // Struct representing the inner state of the layer.
     // Used for storing all computations.
@@ -56,7 +56,7 @@ public:
     //vector_function deriv_function;
     state layState;
 
-    Layer( int neuron_count, int input_count, Activation act = Activation::RELU )
+    DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
     : act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
     {
@@ -190,7 +190,7 @@ public:
     }
 };
 
-class ConvLayer : Layer
+class ConvLayer : DeepLayer
 {
     int input_height;
     int input_width;
@@ -207,7 +207,7 @@ public:
 
     ConvLayer( int input_height, int input_width, int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act )
-    : Layer( kernel_size*kernel_size*C_out, input_height*input_width*C_in, act ), 
+    : DeepLayer( kernel_size*kernel_size*C_out, input_height*input_width*C_in, act ), 
     input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
     kernel_size(kernel_size), stride(stride), padding(padding)
     {}
