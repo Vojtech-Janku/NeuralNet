@@ -10,6 +10,13 @@ using matrix = vector<vector<T>>;
 
 class Layer
 {
+protected:
+    vector<float> bias;
+    matrix<float> weights;
+    Activation act;
+    float (*activation)(float);         // activation function
+    float (*activ_derivative)(float);   // derivative of activation function
+
 public:
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
@@ -62,13 +69,11 @@ class DeepLayer : Layer
     };
 
 public:
-    vector<float> bias;
-    matrix<float> weights;
+    //vector<float> bias;
+    //matrix<float> weights;
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
-    //vector_function activ_function;
-    //vector_function deriv_function;
     state layState;
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
@@ -233,14 +238,7 @@ public:
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t neuron_idx = 0; neuron_idx < getSize(); neuron_idx++ ) 
         {
-            potential = 0;
-            for ( size_t i = 0; i < input.size(); i++ ) 
-            {
-                potential += ( weights[neuron_idx][i] * input[i] );
-            }
-            potential += bias[neuron_idx];
-            layState.potential[neuron_idx] = potential;
-            layState.output[neuron_idx] = activation( potential );
+            
         }
     }
 };
