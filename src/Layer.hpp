@@ -192,17 +192,24 @@ public:
 
 class ConvLayer : Layer
 {
-    int kernel_height;
-    int kernel_width;
-    bool cutoff;
+    int input_height;
+    int input_width;
+    int C_in;
+    int C_out;
+    int kernel_size;
+    int stride;
+    bool padding;
 public:
     string getType() 
     {
         return "CONVOLUTIONAL";
     }
 
-    ConvLayer( int neuron_count, int input_count, Activation act, int kernel_height, int kernel_width, bool cutoff ) 
-    : Layer( neuron_count, input_count, act ), kernel_height(kernel_height), kernel_width(kernel_width), cutoff(cutoff)
+    ConvLayer( int input_height, int input_width, int C_in, int C_out, 
+        int kernel_size, int stride, bool padding, Activation act )
+    : Layer( kernel_size*kernel_size*C_out, input_height*input_width*C_in, act ), 
+    input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
+    kernel_size(kernel_size), stride(stride), padding(padding)
     {}
 
     // TODO: decide if I want to multiply sparse matrix or have a compact weight matrix with specific logic
