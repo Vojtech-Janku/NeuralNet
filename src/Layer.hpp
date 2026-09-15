@@ -216,9 +216,14 @@ class ConvLayer : Layer
     int input_width;
     int C_in;
     int C_out;
-    int kernel_size;
+    matrix<float> kernel_weights;
+    float kernel_bias;
     int stride;
     bool padding;
+    int kernel_size;
+
+    int output_height;
+    int output_width;
 public:
     string getType() 
     {
@@ -228,16 +233,31 @@ public:
     ConvLayer( int input_height, int input_width, int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) :
     input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
-    kernel_size(kernel_size), stride(stride), padding(padding)
-    {}
+    kernel_size(kernel_size), stride(stride), padding(padding),
+    output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
+    {
+        kernel_weights = matrix<float>( kernel_size, vector<float>(kernel_size));
+        kernel_bias = 0;
+    }
 
     // TODO: decide if I want to multiply sparse matrix or have a compact weight matrix with specific logic
-    void compute_potential( const vector<float> &input) 
+    void compute_potential( const matrix<float> &input) 
     {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t neuron_idx = 0; neuron_idx < getSize(); neuron_idx++ ) 
+        for ( size_t neuron_i = 0; neuron_i < output_height; neuron_i++ ) 
         {
+            for (size_t neuron_j = 0; neuron_j < output_width; neuron_j++)
+            {
+                float potential = 0;
+                for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
+                    for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
+                        potential += ( kernel_weights[kernel_i][kernel_j] * input[neuron_i+kernel_i][neuron_j+kernel_j] );
+                    }
+                }
+                potential += kernel_bias;
+                layState.potential[neuron_i][neuron_j] = potential;
+            }
             
         }
     }
