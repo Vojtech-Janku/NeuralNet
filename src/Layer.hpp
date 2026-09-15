@@ -212,6 +212,28 @@ public:
 
 class ConvLayer : Layer
 {
+
+    struct state 
+    {
+        matrix<float> potential;    // potential of each neuron
+        matrix<float> output;       // output of each neuron
+        matrix<float> derivative;   // derivative of sigma( potential )
+        matrix<float> epsilon;      // gradient
+        float epsilon_bias; // gradient for bias weights
+        matrix<float> err_output;   // (d Err / d output) for each neuron
+        // TODO: optimizer computations
+
+        state( int out_height, int out_width, int kernel_size ) 
+        {
+            potential =     matrix<float>(out_height, vector<float>(out_width));
+            output =        matrix<float>(out_height, vector<float>(out_width));
+            derivative =    matrix<float>(out_height, vector<float>(out_width));
+            epsilon =       matrix<float>(kernel_size, vector<float>(kernel_size));
+            epsilon_bias =  0;
+            err_output =    matrix<float>(out_height, vector<float>(out_width));
+        }
+    };
+
     int input_height;
     int input_width;
     int C_in;
@@ -224,6 +246,8 @@ class ConvLayer : Layer
 
     int output_height;
     int output_width;
+
+    state layState;
 public:
     string getType() 
     {
@@ -234,7 +258,8 @@ public:
         int kernel_size, int stride, bool padding, Activation act ) :
     input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
     kernel_size(kernel_size), stride(stride), padding(padding),
-    output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
+    output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
+    layState(state(output_height, output_width, kernel_size))
     {
         kernel_weights = matrix<float>( kernel_size, vector<float>(kernel_size));
         kernel_bias = 0;
