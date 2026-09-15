@@ -21,8 +21,8 @@ public:
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
 
-    virtual matrix<float> getWeights() = 0;
-    virtual vector<float> getBias() = 0;
+    virtual matrix<float> &getWeights() = 0;
+    virtual vector<float> &getBias() = 0;
 
     //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
     //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
@@ -102,11 +102,11 @@ public:
         return weights[0].size();
     }
 
-    matrix<float> getWeights() {
+    matrix<float> &getWeights() {
         return weights;
     }
 
-    vector<float> getBias() {
+    vector<float> &getBias() {
         return bias;
     }
 
@@ -274,11 +274,11 @@ public:
         bias = vector<float>(0);
     }
 
-    matrix<float> getWeights() {
+    matrix<float> &getWeights() {
         return weights;
     }
 
-    vector<float> getBias() {
+    vector<float> &getBias() {
         return bias;
     }
 
