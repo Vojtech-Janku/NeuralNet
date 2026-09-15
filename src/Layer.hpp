@@ -11,8 +11,8 @@ using matrix = vector<vector<T>>;
 class Layer
 {
 protected:
-    vector<float> bias;
     matrix<float> weights;
+    vector<float> bias;
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
@@ -21,8 +21,11 @@ public:
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
 
-    virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
-    virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
+    virtual matrix<float> getWeights() = 0;
+    virtual vector<float> getBias() = 0;
+
+    //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
+    //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
 
     virtual void compute_potential( const vector<float> &input) = 0;
     virtual void compute_derivative() = 0;
@@ -97,6 +100,14 @@ public:
     size_t getInputSize()
     {
         return weights[0].size();
+    }
+
+    matrix<float> getWeights() {
+        return weights;
+    }
+
+    vector<float> getBias() {
+        return bias;
     }
 
     void set_biases( vector<float> b )
@@ -238,8 +249,6 @@ class ConvLayer : public Layer
     int input_width;
     //int C_in;
     //int C_out;
-    matrix<float> kernel_weights;
-    float kernel_bias;
     int stride;
     bool padding;
     int kernel_size;
@@ -261,8 +270,16 @@ public:
     output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
     layState(state(output_height, output_width, kernel_size))
     {
-        kernel_weights = matrix<float>( kernel_size, vector<float>(kernel_size));
-        kernel_bias = 0;
+        weights = matrix<float>( kernel_size, vector<float>(kernel_size));
+        bias = vector<float>(0);
+    }
+
+    matrix<float> getWeights() {
+        return weights;
+    }
+
+    vector<float> getBias() {
+        return bias;
     }
 
     void compute_potential( const matrix<float> &input) 
@@ -276,10 +293,10 @@ public:
                 float potential = 0;
                 for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
                     for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                        potential += ( kernel_weights[kernel_i][kernel_j] * input[neuron_i+kernel_i][neuron_j+kernel_j] );
+                        potential += ( weights[kernel_i][kernel_j] * input[neuron_i+kernel_i][neuron_j+kernel_j] );
                     }
                 }
-                potential += kernel_bias;
+                potential += bias[0];
                 layState.potential[neuron_i][neuron_j] = potential;
                 layState.output[neuron_i][neuron_j] = activation( potential );
             }
