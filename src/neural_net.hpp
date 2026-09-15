@@ -101,7 +101,7 @@ public:
                 for ( size_t r = 0; r < layers[lay+1].getSize(); r++ ) {
                     sum += layers[lay+1].layState.err_output[r] 
                         * layers[lay+1].layState.derivative[r] 
-                        * layers[lay+1].weights[r][j];
+                        * layers[lay+1].getWeights()[r][j];
                 }
                 layers[lay].layState.err_output[j] = sum;
             }
@@ -163,7 +163,7 @@ public:
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
             for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].weights[0].size(); i++ ) {
+                for ( size_t i = 0; i < layers[lay].getWeights()[0].size(); i++ ) {
                     compute_single_adam( layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], 
                                          layers[lay].layState.epsilon[j][i], beta1, beta2, eps );
                 }
@@ -193,17 +193,17 @@ public:
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
             for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].weights[0].size(); i++ ) {
+                for ( size_t i = 0; i < layers[lay].getWeights()[0].size(); i++ ) {
                     switch (opt)
                     {
                     case Optimizer::GRAD:
-                        update_gradient_descent( layers[lay].weights[j][i], layers[lay].layState.epsilon[j][i] );
+                        update_gradient_descent( layers[lay].getWeights()[j][i], layers[lay].layState.epsilon[j][i] );
                         break;
                     case Optimizer::MOMENTUM:
-                        update_momentum( layers[lay].weights[j][i], layers[lay].layState.epsilon[j][i], layers[lay].layState.m[j][i] );
+                        update_momentum( layers[lay].getWeights()[j][i], layers[lay].layState.epsilon[j][i], layers[lay].layState.m[j][i] );
                         break;
                     case Optimizer::ADAM:
-                        update_adam( layers[lay].weights[j][i], layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], it );
+                        update_adam( layers[lay].getWeights()[j][i], layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], it );
                         break;
                     }
                 }
@@ -281,8 +281,8 @@ public:
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
             for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
-                print_vec( layers[lay].weights[i] );
-                std::cout << "  [ " << layers[lay].bias[i] << " ]" << endl;
+                print_vec( layers[lay].getWeights()[i] );
+                std::cout << "  [ " << layers[lay].getBias()[i] << " ]" << endl;
             }
         }
         std::cout << endl;
