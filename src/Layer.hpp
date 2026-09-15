@@ -34,7 +34,7 @@ public:
 
 // Class representing individual layer of neurons with activation function, bias and weights, and last calculated state.
 // Topologically, a DeepLayer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
-class DeepLayer : Layer
+class DeepLayer : public Layer
 {
     // Struct representing the inner state of the layer.
     // Used for storing all computations.
@@ -210,7 +210,7 @@ public:
     }
 };
 
-class ConvLayer : Layer
+class ConvLayer : public Layer
 {
 
     struct state 
@@ -236,8 +236,8 @@ class ConvLayer : Layer
 
     int input_height;
     int input_width;
-    int C_in;
-    int C_out;
+    //int C_in;
+    //int C_out;
     matrix<float> kernel_weights;
     float kernel_bias;
     int stride;
@@ -254,9 +254,9 @@ public:
         return "CONVOLUTIONAL";
     }
 
-    ConvLayer( int input_height, int input_width, int C_in, int C_out, 
+    ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) :
-    input_height(input_height), input_width(input_width), C_in(C_in), C_out(C_out),
+    input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
     kernel_size(kernel_size), stride(stride), padding(padding),
     output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
     layState(state(output_height, output_width, kernel_size))
@@ -265,7 +265,6 @@ public:
         kernel_bias = 0;
     }
 
-    // TODO: decide if I want to multiply sparse matrix or have a compact weight matrix with specific logic
     void compute_potential( const matrix<float> &input) 
     {
         float potential;
@@ -282,8 +281,9 @@ public:
                 }
                 potential += kernel_bias;
                 layState.potential[neuron_i][neuron_j] = potential;
+                layState.output[neuron_i][neuron_j] = activation( potential );
             }
-            
         }
+        
     }
 };
