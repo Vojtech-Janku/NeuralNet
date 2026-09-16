@@ -313,21 +313,23 @@ public:
         }
     }
 
-    void compute_epsilon( const vector<float> &out_prev ) 
+    void compute_epsilon( const matrix<float> &out_prev ) 
     {
+        /* 
+        goal:
+            layState.epsilon[i][j]
+        parameters:
+            layState.err_output[j][j] --> TODO: need to move to Layer, 
+                                                since neural_net doesnt know if layer is conv or deep
+            layState.derivative[i][j]
+            out_prev[i][j]
+        */
+
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < layState.output.size(); j++ ) 
-        {
-            for ( size_t i = 0; i < out_prev.size(); i++ ) 
-            {
-                layState.epsilon[j][i] +=
-                      layState.err_output[j] 
-                    * layState.derivative[j] 
-                    * out_prev[i]; 
+        for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
+            for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
+                
             }
-            layState.epsilon_bias[j] +=
-                  layState.err_output[j] 
-                * layState.derivative[j];
         }
     }
 };
