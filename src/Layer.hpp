@@ -230,7 +230,7 @@ class ConvLayer : public Layer
         matrix<float> output;       // output of each neuron
         matrix<float> derivative;   // derivative of sigma( potential )
         matrix<float> epsilon;      // gradient
-        float epsilon_bias; // gradient for bias weights
+        vector<float> epsilon_bias; // gradient for bias weights
         matrix<float> err_output;   // (d Err / d output) for each neuron
         // TODO: optimizer computations
 
@@ -240,7 +240,7 @@ class ConvLayer : public Layer
             output =        matrix<float>(out_height, vector<float>(out_width));
             derivative =    matrix<float>(out_height, vector<float>(out_width));
             epsilon =       matrix<float>(kernel_size, vector<float>(kernel_size));
-            epsilon_bias =  0;
+            epsilon_bias =  vector<float>(0);
             err_output =    matrix<float>(out_height, vector<float>(out_width));
         }
     };
@@ -301,6 +301,33 @@ public:
                 layState.output[neuron_i][neuron_j] = activation( potential );
             }
         }
-        
+    }
+
+    void compute_derivative() {
+        for ( size_t neuron_i = 0; neuron_i < output_height; neuron_i++ ) 
+        {
+            for (size_t neuron_j = 0; neuron_j < output_width; neuron_j++)
+            {
+                layState.derivative[neuron_i][neuron_j] = activ_derivative( layState.potential[neuron_i][neuron_j] );
+            }
+        }
+    }
+
+    void compute_epsilon( const vector<float> &out_prev ) 
+    {
+      #pragma omp parallel for num_threads(16)                    // multiprocessing 
+        for ( size_t j = 0; j < layState.output.size(); j++ ) 
+        {
+            for ( size_t i = 0; i < out_prev.size(); i++ ) 
+            {
+                layState.epsilon[j][i] +=
+                      layState.err_output[j] 
+                    * layState.derivative[j] 
+                    * out_prev[i]; 
+            }
+            layState.epsilon_bias[j] +=
+                  layState.err_output[j] 
+                * layState.derivative[j];
+        }
     }
 };
