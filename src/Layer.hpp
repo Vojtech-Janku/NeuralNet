@@ -333,3 +333,11 @@ public:
         }
     }
 };
+
+class MaxPoolingLayer : public Layer {
+
+    int pooling_size;
+
+    matrix<pair<int,int>> mask;
+
+};
