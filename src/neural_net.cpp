@@ -119,11 +119,11 @@ void test_minimal_XOR() {
     net.getLayers().at(0).set_biases( Tensor( { 1 }, { 1, 3 } ) );
     net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
-    matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
-    matrix<float> expected = { {0}, {1}, {1}, {0} };
+    Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
+    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
         // RESULT
-    for ( size_t i = 0; i < points.size(); i++ ) {
-        assert( net.feed_forward( points[i] ) == expected[i] );
+    for ( size_t i = 0; i < points.getShape()[0]; i++ ) {
+        assert( net.feed_forward( points.row(i) ) == expected.row(i) );
     }
     std::cout << "PASSED" << endl;
 }
@@ -144,11 +144,11 @@ void test_simple_conv_layer() {
     net.getLayers().at(0).set_biases( Tensor( { 3 }, { -1, 3, 0 } ) );
     net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
-    matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
-    matrix<float> expected = { {0}, {1}, {1}, {0} };
+    Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
+    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
         // RESULT
-    for ( size_t i = 0; i < points.size(); i++ ) {
-        assert( net.feed_forward( points[i] ) == expected[i] );
+    for ( size_t i = 0; i < points.getShape()[0]; i++ ) {
+        assert( net.feed_forward( points.row(i) ) == expected.row(i) );
     }
     std::cout << "PASSED" << endl;
 }
@@ -163,15 +163,15 @@ void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
     Neural_net net( scheme, act, lr );
     net.init_unif( 0, 1 );
         // DATA
-    matrix<float> data = {
+    Tensor data = to_tensor({
         {0,0}, {0,1}, {1,0}, {1,1}
-    };
-    //matrix<float> expected = { {0.001}, {0.999}, {0.999}, {0.001} };
-    matrix<float> expected = { {0}, {1}, {1}, {0} };
+    });
+    //Tensor expected = to_tensor( { {0.001}, {0.999}, {0.999}, {0.001} } );
+    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
         // LEARNING
-    bool trained = net.train( data, expected, data.size(), Optimizer::ADAM, 0.01, epochs );
+    bool trained = net.train( data, expected, data.getShape()[0], Optimizer::ADAM, 0.01, epochs );
         // RESULT
-    matrix<float> pred = net.predict( data );
+    Tensor pred = net.predict( data );
     assert( trained );
     std::cout << "PASSED" << endl;
 }
@@ -187,7 +187,7 @@ Neural_net make_model( vector<size_t> scheme, vector<Activation> act, float lear
 }
 
 // training neural net, with some prints
-void train_model( Neural_net &net, matrix<float> &train_data, matrix<float> &train_target, 
+void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, 
                   size_t batch_size, Optimizer opt, float prec, size_t epochs ) {
     std::cout << "Training with params:     batch_size = " << batch_size << ", optimizer = " << get_str(opt)
               << ", epochs = " << epochs << ", precision = " << prec << "..." << endl;
@@ -225,8 +225,8 @@ void execute_final_workflow() {
 
         // DATA TRANSFORMATIONS
     std::cout << "- Transforming data..." << endl;
-    auto train_data = scale( train_vectors, 255 ) ;
-    auto train_target = transform_index( train_labels, 10 );
+    Tensor train_data = to_tensor( scale( train_vectors, 255 ) );
+    Tensor train_target = to_tensor( transform_index( train_labels, 10 ) );
 
         //  CREATE NEW NEURAL NET
     std::cout << "- Neural Net" << endl;
@@ -255,8 +255,8 @@ void execute_final_workflow() {
     export_data( "data/train_predictions.csv", train_pred );
     auto test_vectors = read_data("data/fashion_mnist_test_vectors.csv", ',');
     auto test_labels = get_column( read_data("data/fashion_mnist_test_labels.csv", ','), 0 );
-    auto test_data = scale( test_vectors, 255 ) ;
-    auto test_target = transform_index( test_labels, 10 );
+    Tensor test_data = to_tensor( scale( test_vectors, 255 ) );
+    Tensor test_target = to_tensor( transform_index( test_labels, 10 ) );
 
     auto test_pred = get_max_idx( net.predict( test_data ) );
     export_data( "data/test_predictions.csv", test_pred );
