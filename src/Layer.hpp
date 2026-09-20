@@ -282,7 +282,7 @@ public:
         return bias;
     }
 
-    void compute_potential( const matrix<float> &input) 
+    void compute_potential( const Tensor &input) 
     {
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
@@ -293,7 +293,7 @@ public:
                 float potential = 0;
                 for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
                     for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                        potential += ( weights.at(kernel_i, kernel_j) * input[neuron_i+kernel_i][neuron_j+kernel_j] );
+                        potential += ( weights.at(kernel_i, kernel_j) * input.at(neuron_i+kernel_i, neuron_j+kernel_j) );
                     }
                 }
                 potential += bias[0];
@@ -313,7 +313,7 @@ public:
         }
     }
 
-    void compute_epsilon( const matrix<float> &out_prev ) 
+    void compute_epsilon( const Tensor &out_prev ) 
     {
         /* 
         goal:
@@ -345,7 +345,7 @@ public:
                     for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
                         layState.epsilon.at(kernel_i, kernel_j) += layState.err_output.at(i,j)
                                     * layState.derivative.at(i,j)
-                                    * out_prev[i+kernel_i][j+kernel_j];
+                                    * out_prev.at( i+kernel_i, j+kernel_j );
                     }
                 }
                 layState.epsilon_bias[0] += layState.err_output.at(i,j)
