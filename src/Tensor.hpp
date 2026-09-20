@@ -24,7 +24,10 @@ struct Tensor
     }
 
     float &operator[](size_t idx) {return data[idx];}
+    const float &operator[](size_t idx) const {return data[idx];}
+
     float &at(size_t i, size_t j) {return data[i*shape[1]+j];}
+    const float &at(size_t i, size_t j) const {return data[i*shape[1]+j];}
 
     Tensor &operator*(float n) {
         for (auto &e : data) e *= n;
@@ -40,11 +43,7 @@ struct Tensor
         return Tensor(vector<size_t>(0));   // TODO: fix this
     }
 
-    int getDimension() {
-        return shape.size();
-    }
-
-    vector<size_t> getShape() {
-        return shape;
-    }
+    size_t getSize() const { return data.size(); }
+    size_t getDimension() const { return shape.size(); }
+    vector<size_t> getShape() const { return shape; }
 };

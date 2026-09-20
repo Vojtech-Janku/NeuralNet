@@ -162,13 +162,13 @@ public:
     }
 
     // the core of feed forward - computes potential and output for this layer
-    void compute_potential( const vector<float> &input)
+    void compute_potential( const Tensor &input)
     {
       #pragma omp parallel for num_threads(16)                    // multiprocessing
         for ( size_t j = 0; j < getSize(); j++ )
         {
             float potential = 0;
-            for ( size_t i = 0; i < input.size(); i++ ) 
+            for ( size_t i = 0; i < input.getSize(); i++ ) 
             {
                 potential += ( weights.at(j,i) * input[i] );
             }
