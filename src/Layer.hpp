@@ -90,10 +90,7 @@ public:
       size(neuron_count), input_size(input_count),
       act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
-    {
-        bias =      Tensor( vector<size_t>( neuron_count ) );
-        weights =   Tensor( vector<size_t>( neuron_count, input_count) );
-    }
+    {}
 
     string getType()
     {
@@ -278,10 +275,7 @@ public:
       kernel_size(kernel_size), stride(stride), padding(padding),
       output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
       layState(state(output_height, output_width, kernel_size))
-    {
-        weights = Tensor( { kernel_size, kernel_size } );
-        bias = Tensor( {1} );
-    }
+    {}
 
     Tensor &getWeights() {
         return weights;
