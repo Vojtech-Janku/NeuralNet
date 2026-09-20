@@ -325,13 +325,34 @@ public:
             out_prev[i][j]
         */
 
-      #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
-            for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                
+        /* is already done in neural_net.compute_gradient() 
+            but this is with correct indexes for conv layer
+            EDIT: this is a bug - zeroing only happens once per batch
+        for ( auto &row : layState.epsilon ) {
+            std::fill( row.begin(), row.end(), 0 );
+        }
+        std::fill( layState.epsilon_bias.begin(), layState.epsilon_bias.end(), 0 );
+        */
+
+      
+        for (size_t i = 0; i < output_height; i++)
+        {
+            for (size_t j = 0; j < output_width; j++)
+            {
+                for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
+                  #pragma omp parallel for num_threads(16)                    // multiprocessing 
+                    for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
+                        layState.epsilon[kernel_i][kernel_j] += layState.err_output[i][j]
+                                    * layState.derivative[i][j]
+                                    * out_prev[i+kernel_i][j+kernel_j];
+                    }
+                }
+                layState.epsilon_bias[0] += layState.err_output[i][j]
+                                    * layState.derivative[i][j];
             }
         }
     }
+
 };
 
 class MaxPoolingLayer : public Layer {
