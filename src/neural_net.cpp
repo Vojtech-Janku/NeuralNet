@@ -114,10 +114,10 @@ void test_minimal_XOR() {
     net.add_layer( 2, Activation::STEP );
     net.add_layer( 1, Activation::STEP );
         // SET WEIGHTS AND BIASES
-    net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 } } );
-    net.getLayers().at(1).set_weights( { { 1, 1 } } );
-    net.getLayers().at(0).set_biases( { -1, 3 } );
-    net.getLayers().at(1).set_biases( { -2 } );
+    net.getLayers().at(0).set_weights( Tensor( { 2, 2 }, { 2, 2, -2, -2 } ) );
+    net.getLayers().at(1).set_weights( Tensor( { 1, 2 }, { 1, 1 } ) );
+    net.getLayers().at(0).set_biases( Tensor( { 1 }, { 1, 3 } ) );
+    net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
     matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
     matrix<float> expected = { {0}, {1}, {1}, {0} };
@@ -139,10 +139,10 @@ void test_simple_conv_layer() {
     net.add_layer( 3, Activation::RELU );
     net.add_layer( 1, Activation::RELU );
         // SET WEIGHTS AND BIASES
-    net.getLayers().at(0).set_weights( { { 2, 2 }, { -2, -2 }, {1, -1} } );
-    net.getLayers().at(1).set_weights( { { 1, 1, 1 } } );
-    net.getLayers().at(0).set_biases( { -1, 3, 0 } );
-    net.getLayers().at(1).set_biases( { -2 } );
+    net.getLayers().at(0).set_weights( Tensor( { 3, 2 }, { 2, 2, -2, -2, 1, -1 } ) );
+    net.getLayers().at(1).set_weights( Tensor( { 1, 3 }, { 1, 1, 1 } ) );
+    net.getLayers().at(0).set_biases( Tensor( { 3 }, { -1, 3, 0 } ) );
+    net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
     matrix<float> points = { {0,0}, {0,1}, {1,0}, {1,1} };
     matrix<float> expected = { {0}, {1}, {1}, {0} };
