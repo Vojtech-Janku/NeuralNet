@@ -2,6 +2,7 @@
 #include <random>
 #include <vector>
 #include "activation.hpp"
+#include "Tensor.hpp"
 
 using namespace std;
 
@@ -11,8 +12,8 @@ using matrix = vector<vector<T>>;
 class Layer
 {
 protected:
-    matrix<float> weights;
-    vector<float> bias;
+    Tensor weights;
+    Tensor bias;
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
@@ -21,8 +22,8 @@ public:
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
 
-    virtual matrix<float> &getWeights() = 0;
-    virtual vector<float> &getBias() = 0;
+    virtual Tensor &getWeights() = 0;
+    virtual Tensor &getBias() = 0;
 
     //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
     //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
@@ -43,31 +44,31 @@ class DeepLayer : public Layer
     // Used for storing all computations.
     struct state 
     {
-        vector<float> potential;    // potential of each neuron
-        vector<float> output;       // output of each neuron
-        vector<float> derivative;   // derivative of sigma( potential )
-        matrix<float> epsilon;      // gradient
-        vector<float> epsilon_bias; // gradient for bias weights
-        vector<float> err_output;   // (d Err / d output) for each neuron
+        Tensor potential;    // potential of each neuron
+        Tensor output;       // output of each neuron
+        Tensor derivative;   // derivative of sigma( potential )
+        Tensor epsilon;      // gradient
+        Tensor epsilon_bias; // gradient for bias weights
+        Tensor err_output;   // (d Err / d output) for each neuron
         // optimizer computations
-        matrix<float> m;    // used for MOMENTUM or first moment in ADAM
-        matrix<float> v;    // used for second moment in ADAM
-        vector<float> m_bias;
-        vector<float> v_bias;
+        Tensor m;    // used for MOMENTUM or first moment in ADAM
+        Tensor v;    // used for second moment in ADAM
+        Tensor m_bias;
+        Tensor v_bias;
 
         state( int n, int incoming ) 
         {
-            potential =     vector<float>(n);
-            output =        vector<float>(n);
-            derivative =    vector<float>(n);
-            epsilon_bias =  vector<float>(n);
-            epsilon =       matrix<float>( n, vector<float>(incoming) );
-            err_output =    vector<float>(n);
+            potential =     Tensor( vector<size_t>( n ) );
+            output =        Tensor( vector<size_t>( n ) );
+            derivative =    Tensor( vector<size_t>( n ) );
+            epsilon_bias =  Tensor( vector<size_t>( n ) );
+            epsilon =       Tensor( vector<size_t>( n, incoming) );
+            err_output =    Tensor( vector<size_t>( n ) );
 
-            m =       matrix<float>( n, vector<float>(incoming) );
-            v =       matrix<float>( n, vector<float>(incoming) );
-            m_bias =  vector<float>(n);
-            v_bias =  vector<float>(n);
+            m =       Tensor( vector<size_t>( n, incoming) );
+            v =       Tensor( vector<size_t>( n, incoming) );
+            m_bias =  Tensor( vector<size_t>( n ) );
+            v_bias =  Tensor( vector<size_t>( n ) );
         }
     };
 
@@ -83,8 +84,8 @@ public:
     : act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
     {
-        bias =      vector<float>(neuron_count);
-        weights =   matrix<float>( neuron_count, vector<float>(input_count) );
+        bias =      Tensor( vector<size_t>( neuron_count ) );;
+        weights =   Tensor( vector<size_t>( neuron_count, input_count) );
     }
 
     string getType()
@@ -325,11 +326,41 @@ public:
             out_prev[i][j]
         */
 
-      #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
-            for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                
+        /* is already done in neural_net.compute_gradient() 
+            but this is with correct indexes for conv layer
+            EDIT: this is a bug - zeroing only happens once per batch
+        for ( auto &row : layState.epsilon ) {
+            std::fill( row.begin(), row.end(), 0 );
+        }
+        std::fill( layState.epsilon_bias.begin(), layState.epsilon_bias.end(), 0 );
+        */
+
+        //TODO: optimize mutliprocessing
+      
+        for (size_t i = 0; i < output_height; i++)
+        {
+            for (size_t j = 0; j < output_width; j++)
+            {
+                for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
+                  #pragma omp parallel for num_threads(16)                    // multiprocessing 
+                    for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
+                        layState.epsilon[kernel_i][kernel_j] += layState.err_output[i][j]
+                                    * layState.derivative[i][j]
+                                    * out_prev[i+kernel_i][j+kernel_j];
+                    }
+                }
+                layState.epsilon_bias[0] += layState.err_output[i][j]
+                                    * layState.derivative[i][j];
             }
         }
     }
+
+};
+
+class MaxPoolingLayer : public Layer {
+
+    int pooling_size;
+
+    matrix<pair<int,int>> mask;
+
 };
