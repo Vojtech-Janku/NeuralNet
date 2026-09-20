@@ -59,20 +59,18 @@ class DeepLayer : public Layer
         Tensor m_bias;
         Tensor v_bias;
 
-        state( int n, int incoming ) 
-        {
-            potential =     Tensor( { n } );
-            output =        Tensor( { n } );
-            derivative =    Tensor( { n } );
-            epsilon_bias =  Tensor( { n } );
-            epsilon =       Tensor( { n, incoming } );
-            err_output =    Tensor( { n } );
-
-            m =       Tensor( { n, incoming } );
-            v =       Tensor( { n, incoming } );
-            m_bias =  Tensor( { n } );
-            v_bias =  Tensor( { n } );
-        }
+        state( size_t n, size_t incoming )
+        : potential(    { n } ),
+          output(       { n } ),
+          derivative(   { n } ),
+          epsilon(      { n, incoming } ),
+          epsilon_bias( { n } ),
+          err_output(   { n } ),
+          m(            { n, incoming } ),
+          v(            { n, incoming } ),
+          m_bias(       { n } ),
+          v_bias(       { n } )
+        {}
     };
 
 public:
@@ -239,15 +237,14 @@ class ConvLayer : public Layer
         Tensor err_output;   // (d Err / d output) for each neuron
         // TODO: optimizer computations
 
-        state( int out_height, int out_width, int kernel_size ) 
-        {
-            potential =     Tensor( { out_height, out_width } );
-            output =        Tensor( { out_height, out_width }  );
-            derivative =    Tensor( { out_height, out_width }  );
-            epsilon =       Tensor( { kernel_size, kernel_size }  );
-            epsilon_bias =  Tensor( { 1 } );
-            err_output =    Tensor( { out_height, out_width }  );
-        }
+        state( size_t out_height, size_t out_width, size_t kernel_size )
+        : potential(    { out_height, out_width } ),
+          output(       { out_height, out_width } ),
+          derivative(   { out_height, out_width } ),
+          epsilon(      { kernel_size, kernel_size } ),
+          epsilon_bias( { 1 } ),
+          err_output(   { out_height, out_width } )
+        {}
     };
 
     int input_height;
