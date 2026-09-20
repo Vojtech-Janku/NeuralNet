@@ -31,9 +31,9 @@ public:
     //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
     //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
 
-    virtual void compute_potential( const vector<float> &input) = 0;
+    virtual void compute_potential( const Tensor &input) = 0;
     virtual void compute_derivative() = 0;
-    virtual void compute_epsilon( const vector<float> &out_prev ) = 0;
+    virtual void compute_epsilon( const Tensor &out_prev ) = 0;
 
 
     virtual ~Layer() {}

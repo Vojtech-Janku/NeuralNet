@@ -101,7 +101,7 @@ public:
                 for ( size_t r = 0; r < layers[lay+1].getSize(); r++ ) {
                     sum += layers[lay+1].layState.err_output[r] 
                         * layers[lay+1].layState.derivative[r] 
-                        * layers[lay+1].getWeights()[r][j];
+                        * layers[lay+1].getWeights().at(r,j);
                 }
                 layers[lay].layState.err_output[j] = sum;
             }
@@ -124,7 +124,7 @@ public:
     }
 
     // computes gradient for given data batch
-    void compute_gradient( const matrix<float> &data, const matrix<float> &labels, 
+    void compute_gradient( const Tensor &data, const Tensor &labels, 
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
         for ( DeepLayer &lay : layers ) {
@@ -142,12 +142,12 @@ public:
         }
         // average the gradient
         for ( DeepLayer &lay : layers ) {
-            mat_div( lay.layState.epsilon, batch_range.second-batch_range.first );
+            lay.layState.epsilon / ( batch_range.second-batch_range.first );
         }
     }
     // just overload
-    void compute_gradient( const matrix<float> &data, const matrix<float> &labels ) {
-        compute_gradient( data, labels, make_pair(0, data.size()) );
+    void compute_gradient( const Tensor &data, const Tensor &labels ) {
+        compute_gradient( data, labels, make_pair(0, data.getShape()[1] ) );
     }
 
     void compute_single_adam( float &m, float &v, const float &epsilon, 
@@ -160,9 +160,9 @@ public:
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
             for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].getWeights()[0].size(); i++ ) {
-                    compute_single_adam( layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], 
-                                         layers[lay].layState.epsilon[j][i], beta1, beta2, eps );
+                for ( size_t i = 0; i < layers[lay].getInputSize(); i++ ) {
+                    compute_single_adam( layers[lay].layState.m.at(j,i), layers[lay].layState.v.at(j,i), 
+                                         layers[lay].layState.epsilon.at(j,i), beta1, beta2, eps );
                 }
                 compute_single_adam( layers[lay].layState.m_bias[j], layers[lay].layState.v_bias[j], 
                                          layers[lay].layState.epsilon_bias[j], beta1, beta2, eps );
@@ -190,17 +190,17 @@ public:
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
             for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].getWeights()[0].size(); i++ ) {
+                for ( size_t i = 0; i < layers[lay].getInputSize(); i++ ) {
                     switch (opt)
                     {
                     case Optimizer::GRAD:
-                        update_gradient_descent( layers[lay].getWeights()[j][i], layers[lay].layState.epsilon[j][i] );
+                        update_gradient_descent( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i) );
                         break;
                     case Optimizer::MOMENTUM:
-                        update_momentum( layers[lay].getWeights()[j][i], layers[lay].layState.epsilon[j][i], layers[lay].layState.m[j][i] );
+                        update_momentum( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i), layers[lay].layState.m.at(j,i) );
                         break;
                     case Optimizer::ADAM:
-                        update_adam( layers[lay].getWeights()[j][i], layers[lay].layState.m[j][i], layers[lay].layState.v[j][i], it );
+                        update_adam( layers[lay].getWeights().at(j,i), layers[lay].layState.m.at(j,i), layers[lay].layState.v.at(j,i), it );
                         break;
                     }
                 }
@@ -208,7 +208,7 @@ public:
         }
     }
 
-    bool train( const matrix<float> &data, const matrix<float> &target, 
+    bool train( const Tensor &data, const Tensor &target, 
                 size_t batch_size, Optimizer opt, float precision = 0.001, size_t epochs = 100000 )
     {
         auto lr_init = learning_rate;
@@ -219,7 +219,7 @@ public:
         //std::shuffle(std::begin(cards_), std::end(cards_), rng);
         for ( size_t i = 0; i < epochs; i++ ) {
             batch_start = 0;
-            while( batch_start+batch_size < data.size() ) {
+            while( batch_start+batch_size < data.getShape()[0] ) {
                 compute_gradient( data, target, make_pair(batch_start, batch_start+batch_size) );
                 if (opt == Optimizer::ADAM) compute_adam();
                 modify_weights(opt, iter);
@@ -228,7 +228,7 @@ public:
                 batch_start += batch_size;
             }
             // spaghetti code but whatever
-            compute_gradient( data, target, make_pair( batch_start, data.size() ) );
+            compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
             if (opt == Optimizer::ADAM) compute_adam();
             modify_weights(opt, iter);
             iter++;
@@ -263,13 +263,13 @@ public:
         return err;
     }
 
-    float total_squared_error( const matrix<float> &data, const matrix<float> &target ) {
+    float total_squared_error( const Tensor &data, const Tensor &target ) {
         float err = 0;
-        for (size_t i = 0; i < data.size(); i++) {
+        for (size_t i = 0; i < data.getShape()[0]; i++) {
             feed_forward( data[i] );
             err += output_squared_error( target[i] );
         }
-        return err / data.size();
+        return err / data.getShape()[0];
     }  
 
     //  ----------  PRINT FUNCTIONS  ----------
