@@ -75,16 +75,19 @@ class DeepLayer : public Layer
 public:
     //vector<float> bias;
     //matrix<float> weights;
+    size_t size;
+    size_t input_size;
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
     state layState;
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
+    : size(neuron_count), input_size(input_count),
+      act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
     {
-        bias =      Tensor( vector<size_t>( neuron_count ) );;
+        bias =      Tensor( vector<size_t>( neuron_count ) );
         weights =   Tensor( vector<size_t>( neuron_count, input_count) );
     }
 
@@ -95,31 +98,31 @@ public:
 
     size_t getSize()
     {
-        return bias.size();
+        return size;
     }
 
     size_t getInputSize()
     {
-        return weights[0].size();
+        return input_size;
     }
 
-    matrix<float> &getWeights() {
+    Tensor &getWeights() {
         return weights;
     }
 
-    vector<float> &getBias() {
+    Tensor &getBias() {
         return bias;
     }
 
-    void set_biases( vector<float> b )
+    void set_biases( Tensor b )
     {
         bias = b;
     }
-    void set_weights( matrix<float> w )
+    void set_weights( Tensor w )
     {
         weights = w;
     }
-    void set_potential( vector<float> pot )
+    void set_potential( Tensor pot )
     {
         layState.potential = pot;
     }
@@ -131,12 +134,13 @@ public:
         std::default_random_engine generator;
         std::uniform_real_distribution<float> distribution(min, max);
         std::uniform_real_distribution<float> bias_distribution(min, 5*max);
-        for ( size_t i = 0; i < weights.size(); i++ ) 
+        for ( size_t i = 0; i < getSize(); i++ ) 
         {
-            for ( auto &w : weights[i] ) 
+            for ( size_t j = 0; j < getInputSize(); j++  ) 
             {
-                w = distribution(generator);
-            }
+                weights.at(i,j) = distribution(generator);
+                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
+            }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
             bias[i] = bias_distribution(generator);
         }
     }
@@ -147,11 +151,11 @@ public:
         std::normal_distribution<float> distribution(mean, stddev);
         //std::normal_distribution<float> bias_distribution(0.01, 0.01);
         std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
-        for ( size_t i = 0; i < weights.size(); i++ ) 
+        for ( size_t i = 0; i < getSize(); i++ ) 
         {
-            for ( auto &w : weights[i] ) 
+            for ( size_t j = 0; j < getInputSize(); j++  ) 
             {
-                w = distribution(generator);
+                weights.at(i,j) = distribution(generator);
                 //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
             }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
             bias[i] = bias_distribution(generator);
@@ -167,7 +171,7 @@ public:
             float potential = 0;
             for ( size_t i = 0; i < input.size(); i++ ) 
             {
-                potential += ( weights[j][i] * input[i] );
+                potential += ( weights.at(j,i) * input[i] );
             }
             potential += bias[j];
             layState.potential[j] = potential;
@@ -206,11 +210,11 @@ public:
     void compute_epsilon( const vector<float> &out_prev ) 
     {
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
-        for ( size_t j = 0; j < layState.output.size(); j++ ) 
+        for ( size_t j = 0; j < getSize(); j++ ) 
         {
             for ( size_t i = 0; i < out_prev.size(); i++ ) 
             {
-                layState.epsilon[j][i] +=
+                layState.epsilon.at(j,i) +=
                       layState.err_output[j] 
                     * layState.derivative[j] 
                     * out_prev[i]; 
@@ -227,22 +231,22 @@ class ConvLayer : public Layer
 
     struct state 
     {
-        matrix<float> potential;    // potential of each neuron
-        matrix<float> output;       // output of each neuron
-        matrix<float> derivative;   // derivative of sigma( potential )
-        matrix<float> epsilon;      // gradient
-        vector<float> epsilon_bias; // gradient for bias weights
-        matrix<float> err_output;   // (d Err / d output) for each neuron
+        Tensor potential;    // potential of each neuron
+        Tensor output;       // output of each neuron
+        Tensor derivative;   // derivative of sigma( potential )
+        Tensor epsilon;      // gradient
+        Tensor epsilon_bias; // gradient for bias weights
+        Tensor err_output;   // (d Err / d output) for each neuron
         // TODO: optimizer computations
 
         state( int out_height, int out_width, int kernel_size ) 
         {
-            potential =     matrix<float>(out_height, vector<float>(out_width));
-            output =        matrix<float>(out_height, vector<float>(out_width));
-            derivative =    matrix<float>(out_height, vector<float>(out_width));
-            epsilon =       matrix<float>(kernel_size, vector<float>(kernel_size));
-            epsilon_bias =  vector<float>(0);
-            err_output =    matrix<float>(out_height, vector<float>(out_width));
+            potential =     Tensor( vector<size_t>( out_height, out_width ) );
+            output =        Tensor( vector<size_t>( out_height, out_width ) );
+            derivative =    Tensor( vector<size_t>( out_height, out_width ) );
+            epsilon =       Tensor( vector<size_t>( kernel_size, kernel_size ) );
+            epsilon_bias =  Tensor( vector<size_t>( 0 ) );
+            err_output =    Tensor( vector<size_t>( out_height, out_width ) );
         }
     };
 
@@ -271,15 +275,15 @@ public:
     output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
     layState(state(output_height, output_width, kernel_size))
     {
-        weights = matrix<float>( kernel_size, vector<float>(kernel_size));
-        bias = vector<float>(0);
+        weights = Tensor( vector<size_t>( kernel_size, kernel_size ) );
+        bias = Tensor( vector<size_t>( 0 ) );
     }
 
-    matrix<float> &getWeights() {
+    Tensor &getWeights() {
         return weights;
     }
 
-    vector<float> &getBias() {
+    Tensor &getBias() {
         return bias;
     }
 
@@ -294,12 +298,12 @@ public:
                 float potential = 0;
                 for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
                     for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                        potential += ( weights[kernel_i][kernel_j] * input[neuron_i+kernel_i][neuron_j+kernel_j] );
+                        potential += ( weights.at(kernel_i, kernel_j) * input[neuron_i+kernel_i][neuron_j+kernel_j] );
                     }
                 }
                 potential += bias[0];
-                layState.potential[neuron_i][neuron_j] = potential;
-                layState.output[neuron_i][neuron_j] = activation( potential );
+                layState.potential.at(neuron_i, neuron_j) = potential;
+                layState.output.at(neuron_i, neuron_j) = activation( potential );
             }
         }
     }
@@ -309,7 +313,7 @@ public:
         {
             for (size_t neuron_j = 0; neuron_j < output_width; neuron_j++)
             {
-                layState.derivative[neuron_i][neuron_j] = activ_derivative( layState.potential[neuron_i][neuron_j] );
+                layState.derivative.at(neuron_i, neuron_j) = activ_derivative( layState.potential.at(neuron_i, neuron_j) );
             }
         }
     }
@@ -344,13 +348,13 @@ public:
                 for ( size_t kernel_i = 0; kernel_i < kernel_size; kernel_i++ ) {
                   #pragma omp parallel for num_threads(16)                    // multiprocessing 
                     for ( size_t kernel_j = 0; kernel_j < kernel_size; kernel_j++ ) {
-                        layState.epsilon[kernel_i][kernel_j] += layState.err_output[i][j]
-                                    * layState.derivative[i][j]
+                        layState.epsilon.at(kernel_i, kernel_j) += layState.err_output.at(i,j)
+                                    * layState.derivative.at(i,j)
                                     * out_prev[i+kernel_i][j+kernel_j];
                     }
                 }
-                layState.epsilon_bias[0] += layState.err_output[i][j]
-                                    * layState.derivative[i][j];
+                layState.epsilon_bias[0] += layState.err_output.at(i,j)
+                                    * layState.derivative.at(i,j);
             }
         }
     }
