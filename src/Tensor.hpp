@@ -46,4 +46,6 @@ struct Tensor
     size_t getSize() const { return data.size(); }
     size_t getDimension() const { return shape.size(); }
     vector<size_t> getShape() const { return shape; }
+
+    void clear() { fill( data.begin(), data.end(), 0 ); }
 };

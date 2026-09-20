@@ -206,12 +206,12 @@ public:
     }
 
     // computes gradient    TODO: move to layer.state?
-    void compute_epsilon( const vector<float> &out_prev ) 
+    void compute_epsilon( const Tensor &out_prev ) 
     {
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t j = 0; j < getSize(); j++ ) 
         {
-            for ( size_t i = 0; i < out_prev.size(); i++ ) 
+            for ( size_t i = 0; i < out_prev.getSize(); i++ ) 
             {
                 layState.epsilon.at(j,i) +=
                       layState.err_output[j] 

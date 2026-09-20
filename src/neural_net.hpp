@@ -81,7 +81,7 @@ public:
     }
 
     // basic feed forward algorithm
-    const vector<float> &feed_forward( const vector<float> &input ) {
+    const Tensor &feed_forward( const Tensor &input ) {
         layers[0].compute_potential( input );
         for ( size_t i = 1; i < layers.size(); i++ ) {
             layers[i].compute_potential( layers[i-1].layState.output );
@@ -90,7 +90,7 @@ public:
     }
 
     // computes error function output derivatives
-    void backpropagation( const vector<float> &target_point ) {
+    void backpropagation( const Tensor &target_point ) {
         for ( size_t n = 0; n < layers.back().getSize(); n++ ) {  // y_j - d_kj
             layers.back().layState.err_output[n] = layers.back().layState.output[n] - target_point[n];
         }
@@ -109,7 +109,7 @@ public:
     }
 
     // computes gradient for whole network, one training example
-    void compute_epsilon( const vector<float> &data_row ) {
+    void compute_epsilon( const Tensor &data_row ) {
         layers[0].compute_epsilon( data_row );
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             layers[lay].compute_epsilon( layers[lay-1].layState.output );
@@ -128,11 +128,8 @@ public:
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
         for ( DeepLayer &lay : layers ) {
-            for ( auto &v : lay.layState.epsilon ) {
-                fill( v.begin(), v.end(), 0 );
-            }
-            fill( lay.layState.epsilon_bias.begin(), 
-                  lay.layState.epsilon_bias.end(), 0 );
+            lay.layState.epsilon.clear();
+            lay.layState.epsilon_bias.clear();
         }
         // total squared error
         //      float err = 0;
