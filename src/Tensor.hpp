@@ -16,8 +16,14 @@ struct Tensor
     float &operator[](size_t idx) {return data[idx];}
     float &at(size_t i, size_t j) {return data[i*shape[1]+j];}
 
-    void operator*(float n) {
+    Tensor &operator*(float n) {
         for (auto &e : data) e *= n;
+        return *this;
+    }
+
+    Tensor &operator/(float n) {
+        for (auto &e : data) e /= n;
+        return *this;
     }
 
     Tensor operator*(Tensor &other) {
