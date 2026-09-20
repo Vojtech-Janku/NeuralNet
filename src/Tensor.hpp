@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <stdexcept>
 #include <vector>
 using namespace std;
 
@@ -11,6 +12,15 @@ struct Tensor
         size_t total = 1;
         for ( auto d : shape ) total *= d;
         data = vector<float>(total);
+    }
+
+    Tensor( vector<size_t> shape, vector<float> data ) : shape(shape), data(data) {
+        size_t total = 1;
+        for ( auto d : shape ) total *= d;
+        if (total != data.size())
+        {
+            throw std::invalid_argument( "Tensor: shape does not match data size" );
+        }
     }
 
     float &operator[](size_t idx) {return data[idx];}
