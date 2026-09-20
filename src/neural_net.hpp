@@ -135,10 +135,10 @@ public:
         //      float err = 0;
         // go through training data
         for ( size_t k = batch_range.first; k < batch_range.second; k++ ) {
-            feed_forward( data[k] );
+            feed_forward( data.row(k) );
             compute_derivatives();
-            backpropagation( labels[k] );
-            compute_epsilon( data[k] );
+            backpropagation( labels.row(k) );
+            compute_epsilon( data.row(k) );
         }
         // average the gradient
         for ( DeepLayer &lay : layers ) {
@@ -242,10 +242,12 @@ public:
         return false;   
     }
 
-    matrix<float> predict( const matrix<float> &data ) {
-        matrix<float> pred;
-        for (size_t k = 0; k < data.size(); k++) {
-            pred.push_back( feed_forward( data[k] ) );
+    Tensor predict( const Tensor &data ) {
+        size_t out_size = layers.back().getSize();
+        Tensor pred( { data.getShape()[0], out_size } );
+        for (size_t k = 0; k < data.getShape()[0]; k++) {
+            const Tensor &out = feed_forward( data.row(k) );
+            for (size_t j = 0; j < out_size; j++) pred.at(k,j) = out[j];
         }
         return pred;
     }
@@ -254,7 +256,7 @@ public:
         return layers.size();
     }
 
-    float output_squared_error( const vector<float> &target ) {
+    float output_squared_error( const Tensor &target ) {
         float err = 0;
         for ( size_t i = 0; i < net_scheme.back(); i++) {
             err += ( target[i] - layers.back().layState.output[i] ) 
@@ -266,8 +268,8 @@ public:
     float total_squared_error( const Tensor &data, const Tensor &target ) {
         float err = 0;
         for (size_t i = 0; i < data.getShape()[0]; i++) {
-            feed_forward( data[i] );
-            err += output_squared_error( target[i] );
+            feed_forward( data.row(i) );
+            err += output_squared_error( target.row(i) );
         }
         return err / data.getShape()[0];
     }  
@@ -278,7 +280,7 @@ public:
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
             for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
-                print_vec( layers[lay].getWeights()[i] );
+                print_vec( layers[lay].getWeights().row(i) );
                 std::cout << "  [ " << layers[lay].getBias()[i] << " ]" << endl;
             }
         }
@@ -290,7 +292,7 @@ public:
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
             for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
-                print_vec( layers[lay].layState.epsilon[i] );
+                print_vec( layers[lay].layState.epsilon.row(i) );
                 std::cout << "  [ " << layers[lay].layState.epsilon_bias[i] << " ]" << endl;
             }
         }

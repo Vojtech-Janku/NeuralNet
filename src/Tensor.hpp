@@ -1,3 +1,4 @@
+#pragma once
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
@@ -48,4 +49,14 @@ struct Tensor
     vector<size_t> getShape() const { return shape; }
 
     void clear() { fill( data.begin(), data.end(), 0 ); }
+
+    // strips the leading dimension, returning row i as its own (copied) Tensor
+    // e.g. for a {samples, features} Tensor, row(k) gives the {features} Tensor for sample k
+    Tensor row( size_t i ) const {
+        vector<size_t> row_shape( shape.begin()+1, shape.end() );
+        size_t row_size = 1;
+        for ( auto d : row_shape ) row_size *= d;
+        vector<float> row_data( data.begin() + i*row_size, data.begin() + (i+1)*row_size );
+        return Tensor( row_shape, row_data );
+    }
 };

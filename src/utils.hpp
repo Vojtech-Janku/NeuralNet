@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include "Tensor.hpp"
 
 using namespace std;
 
@@ -65,6 +66,15 @@ void print_vec( const vector<T> &vec ) {
     if ( !vec.empty() ) std::cout << vec[0];
     for ( size_t i = 1; i < vec.size(); i++ ) {
         std::cout << ", " << vec[i];
+    }
+    std::cout << " >";
+}
+
+void print_vec( const Tensor &t ) {
+    std::cout << "< ";
+    if ( t.getSize() > 0 ) std::cout << t[0];
+    for ( size_t i = 1; i < t.getSize(); i++ ) {
+        std::cout << ", " << t[i];
     }
     std::cout << " >";
 }
