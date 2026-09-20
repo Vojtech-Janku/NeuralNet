@@ -19,6 +19,9 @@ protected:
     float (*activ_derivative)(float);   // derivative of activation function
 
 public:
+    Layer( vector<size_t> weight_shape, vector<size_t> bias_shape ) 
+    : weights(weight_shape), bias(bias_shape) {}
+
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
 
@@ -58,17 +61,17 @@ class DeepLayer : public Layer
 
         state( int n, int incoming ) 
         {
-            potential =     Tensor( vector<size_t>( n ) );
-            output =        Tensor( vector<size_t>( n ) );
-            derivative =    Tensor( vector<size_t>( n ) );
-            epsilon_bias =  Tensor( vector<size_t>( n ) );
-            epsilon =       Tensor( vector<size_t>( n, incoming) );
-            err_output =    Tensor( vector<size_t>( n ) );
+            potential =     Tensor( { n } );
+            output =        Tensor( { n } );
+            derivative =    Tensor( { n } );
+            epsilon_bias =  Tensor( { n } );
+            epsilon =       Tensor( { n, incoming } );
+            err_output =    Tensor( { n } );
 
-            m =       Tensor( vector<size_t>( n, incoming) );
-            v =       Tensor( vector<size_t>( n, incoming) );
-            m_bias =  Tensor( vector<size_t>( n ) );
-            v_bias =  Tensor( vector<size_t>( n ) );
+            m =       Tensor( { n, incoming } );
+            v =       Tensor( { n, incoming } );
+            m_bias =  Tensor( { n } );
+            v_bias =  Tensor( { n } );
         }
     };
 
@@ -83,7 +86,8 @@ public:
     state layState;
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : size(neuron_count), input_size(input_count),
+    : Layer( { neuron_count, input_count}, {neuron_count} ),
+      size(neuron_count), input_size(input_count),
       act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
       layState( neuron_count, input_count ) 
     {
@@ -228,7 +232,6 @@ public:
 
 class ConvLayer : public Layer
 {
-
     struct state 
     {
         Tensor potential;    // potential of each neuron
@@ -241,12 +244,12 @@ class ConvLayer : public Layer
 
         state( int out_height, int out_width, int kernel_size ) 
         {
-            potential =     Tensor( vector<size_t>( out_height, out_width ) );
-            output =        Tensor( vector<size_t>( out_height, out_width ) );
-            derivative =    Tensor( vector<size_t>( out_height, out_width ) );
-            epsilon =       Tensor( vector<size_t>( kernel_size, kernel_size ) );
-            epsilon_bias =  Tensor( vector<size_t>( 0 ) );
-            err_output =    Tensor( vector<size_t>( out_height, out_width ) );
+            potential =     Tensor( { out_height, out_width } );
+            output =        Tensor( { out_height, out_width }  );
+            derivative =    Tensor( { out_height, out_width }  );
+            epsilon =       Tensor( { kernel_size, kernel_size }  );
+            epsilon_bias =  Tensor( { 1 } );
+            err_output =    Tensor( { out_height, out_width }  );
         }
     };
 
@@ -269,14 +272,15 @@ public:
     }
 
     ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
-        int kernel_size, int stride, bool padding, Activation act ) :
-    input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
-    kernel_size(kernel_size), stride(stride), padding(padding),
-    output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
-    layState(state(output_height, output_width, kernel_size))
+        int kernel_size, int stride, bool padding, Activation act ) 
+    : Layer( {kernel_size, kernel_size}, {1} ),
+      input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
+      kernel_size(kernel_size), stride(stride), padding(padding),
+      output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
+      layState(state(output_height, output_width, kernel_size))
     {
-        weights = Tensor( vector<size_t>( kernel_size, kernel_size ) );
-        bias = Tensor( vector<size_t>( 0 ) );
+        weights = Tensor( { kernel_size, kernel_size } );
+        bias = Tensor( {1} );
     }
 
     Tensor &getWeights() {
