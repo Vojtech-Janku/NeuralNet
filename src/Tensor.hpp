@@ -16,12 +16,7 @@ struct Tensor
     }
 
     Tensor( vector<size_t> shape, vector<float> data ) : shape(shape), data(data) {
-        size_t total = 1;
-        for ( auto d : shape ) total *= d;
-        if (total != data.size())
-        {
-            throw std::invalid_argument( "Tensor: shape does not match data size" );
-        }
+        reshape( shape );
     }
 
     float &operator[](size_t idx) {return data[idx];}
@@ -58,5 +53,19 @@ struct Tensor
         for ( auto d : row_shape ) row_size *= d;
         vector<float> row_data( data.begin() + i*row_size, data.begin() + (i+1)*row_size );
         return Tensor( row_shape, row_data );
+    }
+
+    void flatten() {
+        shape = { data.size() };
+    }
+
+    void reshape( vector<size_t> newShape ){
+        size_t total = 1;
+        for ( auto d : newShape ) total *= d;
+        if (total != data.size())
+        {
+            throw std::invalid_argument( "Tensor: shape does not match data size" );
+        }
+        shape = newShape;
     }
 };
