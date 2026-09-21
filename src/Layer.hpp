@@ -315,25 +315,6 @@ public:
 
     void compute_epsilon( const Tensor &out_prev ) 
     {
-        /* 
-        goal:
-            layState.epsilon[i][j]
-        parameters:
-            layState.err_output[j][j] --> TODO: need to move to Layer, 
-                                                since neural_net doesnt know if layer is conv or deep
-            layState.derivative[i][j]
-            out_prev[i][j]
-        */
-
-        /* is already done in neural_net.compute_gradient() 
-            but this is with correct indexes for conv layer
-            EDIT: this is a bug - zeroing only happens once per batch
-        for ( auto &row : layState.epsilon ) {
-            std::fill( row.begin(), row.end(), 0 );
-        }
-        std::fill( layState.epsilon_bias.begin(), layState.epsilon_bias.end(), 0 );
-        */
-
         //TODO: optimize mutliprocessing
       
         for (size_t i = 0; i < output_height; i++)
