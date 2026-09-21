@@ -9,6 +9,8 @@
 
 using namespace std;
 
+enum LayerType{ DEEP, CONVOLUTIONAL, MAXPOOLING, NORMALIZATION, ATTENTION };
+
 // optimizers
 enum Optimizer{ GRAD, MOMENTUM, ADAM };
 // just for printing
@@ -64,9 +66,21 @@ public:
     //    layers.push_back(     DeepLayer( layer_size, input_size, a ) );
     //}
 
-    void add_layer( size_t layer_size, Activation a ) {
+    void add_layer( int layer_type, Activation a, size_t layer_size ) {
+
         size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
-        layers.push_back(     DeepLayer( layer_size, layer_input, a ) );
+        switch (layer_type)
+        {
+        case 0:
+            layers.push_back( DeepLayer( layer_size, layer_input, a ) );
+            break;
+        case 1:
+            layers.push_back( ConvLayer( layer_size, layer_input, a ) );
+            break;        
+        default:
+            break;
+        }
+        
     }
 
     void init_unif( float min = 0, float max = 0.1 ) {
