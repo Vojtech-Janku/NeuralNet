@@ -284,7 +284,7 @@ class ConvLayer : public Layer
 public:
     ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) 
-    : Layer( {kernel_size, kernel_size}, {1}, state(output_height, output_width, kernel_size) ),
+    : Layer( {kernel_size, kernel_size}, {1}, state(input_height-kernel_size+1, input_width-kernel_size+1, kernel_size) ),
       input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
       kernel_size(kernel_size), stride(stride), padding(padding),
       output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
