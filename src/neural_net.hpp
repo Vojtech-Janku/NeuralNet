@@ -70,7 +70,7 @@ public:
     //Deep layer
     void add_layer( Activation a, size_t layer_size ) {
 
-        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back()->getSize();
+        size_t layer_input = getLayers().empty() ? input_size : getLayers().back()->getSize();
         layers.push_back( make_unique<DeepLayer>( layer_size, layer_input, a ) );
     }
 
@@ -78,7 +78,6 @@ public:
     void add_layer( Activation a, size_t input_height, size_t input_width, size_t kernel_size ) {
         int stride = 1;
         bool padding = true;
-        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back()->getSize();
         layers.push_back( make_unique<ConvLayer>( input_height, input_width, kernel_size, stride, padding, a ) );
     }
 
@@ -87,10 +86,7 @@ public:
     }
 
     void init_gauss() {
-        for ( auto &lay : layers )
-        {
-            lay->initialize_gauss( 0, sqrt( 2.0 / lay->getInputSize() ) );
-        }
+        for ( auto &lay : layers ) { lay->initialize_gauss(); }
     }
 
     // basic feed forward algorithm
@@ -246,7 +242,7 @@ public:
 
     float output_squared_error( const Tensor &target ) {
         float err = 0;
-        for ( size_t i = 0; i < net_scheme.back(); i++) {
+        for ( size_t i = 0; i < layers.back()->getSize(); i++) {
             err += ( target[i] - layers.back()->layState.output[i] )
                  * ( target[i] - layers.back()->layState.output[i] );
         }

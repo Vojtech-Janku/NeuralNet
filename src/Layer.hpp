@@ -160,9 +160,6 @@ class DeepLayer : public Layer
 public:
     size_t size;
     size_t input_size;
-    //Activation act;
-    //float (*activation)(float);         // activation function
-    //float (*activ_derivative)(float);   // derivative of activation function
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
     : Layer( { neuron_count, input_count}, {neuron_count}, state(neuron_count, input_count), act ),
@@ -200,7 +197,7 @@ public:
     // the core of feed forward - computes potential and output for this layer
     void compute_potential( const Tensor &input)
     {
-        //input.flatten(); TODO: handle this in outside?
+        //input.flatten(); TODO: handle this in outside? or do I need this at all? I think not with operator[]
 
       #pragma omp parallel for num_threads(16)                    // multiprocessing
         for ( size_t j = 0; j < getSize(); j++ )
@@ -292,12 +289,12 @@ public:
     }
 
     size_t getSize() {
-        return kernel_size*kernel_size;
+        return output_height*output_width;
     }
 
     size_t getInputSize()
     {
-        return input_height*input_width;
+        return kernel_size*kernel_size;
     }
 
     Tensor &getWeights() {
@@ -342,10 +339,17 @@ public:
         }
     }
 
-    void compute_epsilon( const Tensor &out_prev ) 
+    // NOTE: this only computes the weight/bias gradient for THIS layer's kernel.
+    // It does not compute the gradient w.r.t. this layer's input (d Err / d out_prev),
+    // which is what Neural_net::backpropagation would need to keep propagating error
+    // further back through another ConvLayer preceding this one. Backprop currently only
+    // handles projecting error through a dense DeepLayer weight matrix (see
+    // Neural_net::backpropagation's use of getWeights().at(r,j)), so a ConvLayer must be
+    // followed by a DeepLayer, not another ConvLayer, until that's implemented.
+    void compute_epsilon( const Tensor &out_prev )
     {
         //TODO: optimize mutliprocessing
-      
+
         for (size_t i = 0; i < output_height; i++)
         {
             for (size_t j = 0; j < output_width; j++)
