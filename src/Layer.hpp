@@ -18,6 +18,24 @@ protected:
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
 
+    // Struct representing the inner state of the layer.
+    // Used for storing all computations.
+    /*
+    struct state 
+    {
+        Tensor potential;    // potential of each neuron
+        Tensor output;       // output of each neuron
+        Tensor derivative;   // derivative of sigma( potential )
+        Tensor epsilon;      // gradient
+        Tensor epsilon_bias; // gradient for bias weights
+        Tensor err_output;   // (d Err / d output) for each neuron
+        // optimizer computations
+        Tensor m;    // used for MOMENTUM or first moment in ADAM
+        Tensor v;    // used for second moment in ADAM
+        Tensor m_bias;
+        Tensor v_bias;
+    };
+    */
     struct state 
     {
         Tensor potential;    // potential of each neuron
@@ -54,8 +72,10 @@ protected:
     
 
 public:
-    Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState ) 
-    : weights(weight_shape), bias(bias_shape), layState(layState) 
+    Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState, Activation act ) 
+    : weights(weight_shape), bias(bias_shape), layState(layState),
+      act(act), activation( activ_functions.at(act).first ), 
+      activ_derivative( activ_functions.at(act).second )
     {}
 
     state layState;
@@ -136,41 +156,17 @@ public:
 // Topologically, a DeepLayer object consists of a row of neurons and the weights of their inbound edges (coming from previous layer). 
 class DeepLayer : public Layer
 {
-    // Struct representing the inner state of the layer.
-    // Used for storing all computations.
-    /*
-    struct state 
-    {
-        Tensor potential;    // potential of each neuron
-        Tensor output;       // output of each neuron
-        Tensor derivative;   // derivative of sigma( potential )
-        Tensor epsilon;      // gradient
-        Tensor epsilon_bias; // gradient for bias weights
-        Tensor err_output;   // (d Err / d output) for each neuron
-        // optimizer computations
-        Tensor m;    // used for MOMENTUM or first moment in ADAM
-        Tensor v;    // used for second moment in ADAM
-        Tensor m_bias;
-        Tensor v_bias;
-
-
-    };
-
-    */
 
 public:
-    //vector<float> bias;
-    //matrix<float> weights;
     size_t size;
     size_t input_size;
-    Activation act;
-    float (*activation)(float);         // activation function
-    float (*activ_derivative)(float);   // derivative of activation function
+    //Activation act;
+    //float (*activation)(float);         // activation function
+    //float (*activ_derivative)(float);   // derivative of activation function
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : Layer( { neuron_count, input_count}, {neuron_count}, state(neuron_count, input_count) ),
-      size(neuron_count), input_size(input_count),
-      act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second )
+    : Layer( { neuron_count, input_count}, {neuron_count}, state(neuron_count, input_count), act ),
+      size(neuron_count), input_size(input_count)
     {}
 
     string getType()
@@ -284,7 +280,7 @@ class ConvLayer : public Layer
 public:
     ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) 
-    : Layer( {kernel_size, kernel_size}, {1}, state(input_height-kernel_size+1, input_width-kernel_size+1, kernel_size) ),
+    : Layer( {kernel_size, kernel_size}, {1}, state(input_height-kernel_size+1, input_width-kernel_size+1, kernel_size), act ),
       input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
       kernel_size(kernel_size), stride(stride), padding(padding),
       output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
