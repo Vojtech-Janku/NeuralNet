@@ -62,6 +62,7 @@ public:
 
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
+    virtual size_t getInputSize() = 0;
 
     virtual Tensor &getWeights() = 0;
     virtual Tensor &getBias() = 0;
@@ -70,8 +71,37 @@ public:
     void set_weights( const Tensor &w ) { weights = w; }
     void set_biases( const Tensor &b ) { bias = b; }
 
-    //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
-    //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
+    // uniform initialization
+    // I found experimentally that it's better to initialize biases a bit higher
+    void initialize_uniform( float min = 0, float max = 0.1 )
+    {
+        std::default_random_engine generator;
+        std::uniform_real_distribution<float> distribution(min, max);
+        std::uniform_real_distribution<float> bias_distribution(min, 5*max);
+        for ( size_t i = 0; i < weights.getSize(); i++ ) 
+        {
+            weights[i] = distribution(generator);
+                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start                                    
+                  // theoretically it should work but practically it didn't so YOLO, abs value :)
+        }
+        for (size_t i = 0; i < bias.getSize(); i++) { bias[i] = bias_distribution(generator); }
+    }
+    // gaussian initialization //TODO: separate weights and biases initial distribution
+    void initialize_gauss( float mean = 0, float stddev = -1 )
+    {
+        if ( stddev < 0 ) stddev = sqrt( 2.0 / getInputSize() ); // He initialization by default
+        std::default_random_engine generator;
+        std::normal_distribution<float> distribution(mean, stddev);
+        //std::normal_distribution<float> bias_distribution(0.01, 0.01);
+        std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
+        for ( size_t i = 0; i < weights.getSize(); i++ ) 
+        {
+            weights[i] = distribution(generator);
+                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start                                    
+                  // theoretically it should work but practically it didn't so YOLO, abs value :)
+        }
+        for (size_t i = 0; i < bias.getSize(); i++) { bias[i] = bias_distribution(generator); }
+    }
 
     virtual void compute_potential( const Tensor &input) = 0;
     virtual void compute_derivative() = 0;
@@ -171,41 +201,6 @@ public:
         layState.potential = pot;
     }
 
-    // uniform initialization
-    // I found experimentally that it's better to initialize biases a bit higher
-    void initialize_uniform( float min = 0, float max = 0.1 )
-    {
-        std::default_random_engine generator;
-        std::uniform_real_distribution<float> distribution(min, max);
-        std::uniform_real_distribution<float> bias_distribution(min, 5*max);
-        for ( size_t i = 0; i < getSize(); i++ ) 
-        {
-            for ( size_t j = 0; j < getInputSize(); j++  ) 
-            {
-                weights.at(i,j) = distribution(generator);
-                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
-            }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
-            bias[i] = bias_distribution(generator);
-        }
-    }
-    // gaussian initialization //TODO: separate weights and biases initial distribution
-    void initialize_gauss( float mean = 0, float stddev = 1 ) 
-    {
-        std::default_random_engine generator;
-        std::normal_distribution<float> distribution(mean, stddev);
-        //std::normal_distribution<float> bias_distribution(0.01, 0.01);
-        std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
-        for ( size_t i = 0; i < getSize(); i++ ) 
-        {
-            for ( size_t j = 0; j < getInputSize(); j++  ) 
-            {
-                weights.at(i,j) = distribution(generator);
-                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start
-            }                                        // theoretically it should work but practically it didn't so YOLO, abs value :)
-            bias[i] = bias_distribution(generator);
-        }
-    }
-
     // the core of feed forward - computes potential and output for this layer
     void compute_potential( const Tensor &input)
     {
@@ -302,6 +297,11 @@ public:
 
     size_t getSize() {
         return kernel_size*kernel_size;
+    }
+
+    size_t getInputSize()
+    {
+        return input_height*input_width;
     }
 
     Tensor &getWeights() {
