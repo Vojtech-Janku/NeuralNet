@@ -133,10 +133,8 @@ public:
     }
 
     void update_gradient_descent( float learning_rate ) {
-        for (size_t i = 0; i < weights.getSize(); i++)
-        {
-            weights[i] -= learning_rate*layState.epsilon[i];
-        }
+        for (size_t i = 0; i < weights.getSize(); i++) { weights[i] -= learning_rate*layState.epsilon[i]; }
+        for (size_t i = 0; i < bias.getSize(); i++) { bias[i] -= learning_rate*layState.epsilon_bias[i]; }
     }
 
     /*void update_momentum( float &weight, const float &gradient, float &m) {
