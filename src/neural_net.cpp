@@ -111,13 +111,13 @@ void test_minimal_XOR() {
     // vector<Activation> act = { Activation::STEP, Activation::STEP };
     // Neural_net net( scheme, act );
     Neural_net net( 2 );
-    net.add_layer( LayerType::DEEP, Activation::STEP, 2 );
-    net.add_layer( LayerType::DEEP, Activation::STEP, 1 );
+    net.add_layer( Activation::STEP, 2 );
+    net.add_layer( Activation::STEP, 1 );
         // SET WEIGHTS AND BIASES
-    net.getLayers().at(0).set_weights( Tensor( { 2, 2 }, { 2, 2, -2, -2 } ) );
-    net.getLayers().at(1).set_weights( Tensor( { 1, 2 }, { 1, 1 } ) );
-    net.getLayers().at(0).set_biases( Tensor( { 1 }, { 1, 3 } ) );
-    net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
+    net.getLayers().at(0)->set_weights( Tensor( { 2, 2 }, { 2, 2, -2, -2 } ) );
+    net.getLayers().at(1)->set_weights( Tensor( { 1, 2 }, { 1, 1 } ) );
+    net.getLayers().at(0)->set_biases( Tensor( { 1 }, { 1, 3 } ) );
+    net.getLayers().at(1)->set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
     Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
     Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
@@ -136,13 +136,13 @@ void test_simple_conv_layer() {
     // Neural_net net( scheme, act );
 
     Neural_net net( 2 );
-    net.add_layer( LayerType::DEEP, Activation::RELU, 3 );
-    net.add_layer( LayerType::DEEP, Activation::RELU, 1 );
+    net.add_layer( Activation::RELU, 3 );
+    net.add_layer( Activation::RELU, 1 );
         // SET WEIGHTS AND BIASES
-    net.getLayers().at(0).set_weights( Tensor( { 3, 2 }, { 2, 2, -2, -2, 1, -1 } ) );
-    net.getLayers().at(1).set_weights( Tensor( { 1, 3 }, { 1, 1, 1 } ) );
-    net.getLayers().at(0).set_biases( Tensor( { 3 }, { -1, 3, 0 } ) );
-    net.getLayers().at(1).set_biases( Tensor( { 1 }, { -2 } ) );
+    net.getLayers().at(0)->set_weights( Tensor( { 3, 2 }, { 2, 2, -2, -2, 1, -1 } ) );
+    net.getLayers().at(1)->set_weights( Tensor( { 1, 3 }, { 1, 1, 1 } ) );
+    net.getLayers().at(0)->set_biases( Tensor( { 3 }, { -1, 3, 0 } ) );
+    net.getLayers().at(1)->set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
     Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
     Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );

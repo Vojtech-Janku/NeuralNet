@@ -6,6 +6,7 @@
 #include <vector>
 #include "utils.hpp"
 #include "Layer.hpp"
+#include <memory>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ class Neural_net
     size_t input_size;         // number of neurons in input layer
     vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
     vector<Activation> act_funs;
-    vector<Layer> layers;
+    vector<unique_ptr<Layer>> layers;
 
     float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
 
@@ -55,7 +56,7 @@ public:
         return net_scheme;
     }
 
-    vector<Layer> &getLayers()
+    vector<unique_ptr<Layer>> &getLayers()
     {
         return layers;
     }
@@ -69,79 +70,79 @@ public:
     //Deep layer
     void add_layer( Activation a, size_t layer_size ) {
 
-        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
-        layers.push_back( DeepLayer( layer_size, layer_input, a ) );
+        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back()->getSize();
+        layers.push_back( make_unique<DeepLayer>( layer_size, layer_input, a ) );
     }
 
     // Conv layer
     void add_layer( Activation a, size_t input_height, size_t input_width, size_t kernel_size ) {
         int stride = 1;
         bool padding = true;
-        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
-        layers.push_back( ConvLayer( input_height, input_width, kernel_size, stride, padding, a ) );
+        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back()->getSize();
+        layers.push_back( make_unique<ConvLayer>( input_height, input_width, kernel_size, stride, padding, a ) );
     }
 
-    /*void init_unif( float min = 0, float max = 0.1 ) {
-        for ( auto &lay : layers ) { lay.initialize_uniform(min, max); }
+    void init_unif( float min = 0, float max = 0.1 ) {
+        for ( auto &lay : layers ) { lay->initialize_uniform(min, max); }
     }
 
     void init_gauss() {
         for ( auto &lay : layers )
         {
-            lay.initialize_gauss( 0, sqrt( 2.0 / lay.getInputSize() ) );
+            lay->initialize_gauss( 0, sqrt( 2.0 / lay->getInputSize() ) );
         }
-    }*/
+    }
 
     // basic feed forward algorithm
     const Tensor &feed_forward( const Tensor &input ) {
-        layers[0].compute_potential( input );
+        layers[0]->compute_potential( input );
         for ( size_t i = 1; i < layers.size(); i++ ) {
-            layers[i].compute_potential( layers[i-1].layState.output );
+            layers[i]->compute_potential( layers[i-1]->layState.output );
         }
-        return layers.back().layState.output;
+        return layers.back()->layState.output;
     }
 
     // computes error function output derivatives
     void backpropagation( const Tensor &target_point ) {
-        for ( size_t n = 0; n < layers.back().getSize(); n++ ) {  // y_j - d_kj
-            layers.back().layState.err_output[n] = layers.back().layState.output[n] - target_point[n];
+        for ( size_t n = 0; n < layers.back()->getSize(); n++ ) {  // y_j - d_kj
+            layers.back()->layState.err_output[n] = layers.back()->layState.output[n] - target_point[n];
         }
         for ( int lay = layers.size()-2; lay >= 0; --lay ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
-            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
+            for ( size_t j = 0; j < layers[lay]->getSize(); j++ ) {
                 float sum = 0;
-                for ( size_t r = 0; r < layers[lay+1].getSize(); r++ ) {
-                    sum += layers[lay+1].layState.err_output[r] 
-                        * layers[lay+1].layState.derivative[r] 
-                        * layers[lay+1].getWeights().at(r,j);
+                for ( size_t r = 0; r < layers[lay+1]->getSize(); r++ ) {
+                    sum += layers[lay+1]->layState.err_output[r]
+                        * layers[lay+1]->layState.derivative[r]
+                        * layers[lay+1]->getWeights().at(r,j);
                 }
-                layers[lay].layState.err_output[j] = sum;
+                layers[lay]->layState.err_output[j] = sum;
             }
-        }        
+        }
     }
 
     // computes gradient for whole network, one training example
     void compute_epsilon( const Tensor &data_row ) {
-        layers[0].compute_epsilon( data_row );
+        layers[0]->compute_epsilon( data_row );
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
-            layers[lay].compute_epsilon( layers[lay-1].layState.output );
-        }        
+            layers[lay]->compute_epsilon( layers[lay-1]->layState.output );
+        }
     }
 
     // computes all activation functions derivatives
     void compute_derivatives() {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-            layers[lay].compute_derivative();
-        }        
+            layers[lay]->compute_derivative();
+        }
     }
 
     // computes gradient for given data batch
-    void compute_gradient( const Tensor &data, const Tensor &labels, 
+    void compute_gradient( const Tensor &data, const Tensor &labels,
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
-        for ( Layer &lay : layers ) {
-            lay.layState.epsilon.clear();
-            lay.layState.epsilon_bias.clear();
+        for ( auto &lay : layers ) {
+            lay->layState.epsilon.clear();
+            lay->layState.epsilon_bias.clear();
         }
         // total squared error
         //      float err = 0;
@@ -153,8 +154,8 @@ public:
             compute_epsilon( data.row(k) );
         }
         // average the gradient
-        for ( Layer &lay : layers ) {
-            lay.layState.epsilon / ( batch_range.second-batch_range.first );
+        for ( auto &lay : layers ) {
+            lay->layState.epsilon / ( batch_range.second-batch_range.first );
         }
     }
     // just overload
@@ -191,7 +192,7 @@ public:
     void modify_weights( Optimizer opt, const size_t &it = 0 ) {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
-            layers[lay].modify_weights( learning_rate );
+            layers[lay]->modify_weights( learning_rate );
         }
     }
 
@@ -230,7 +231,7 @@ public:
     }
 
     Tensor predict( const Tensor &data ) {
-        size_t out_size = layers.back().getSize();
+        size_t out_size = layers.back()->getSize();
         Tensor pred( { data.getShape()[0], out_size } );
         for (size_t k = 0; k < data.getShape()[0]; k++) {
             const Tensor &out = feed_forward( data.row(k) );
@@ -246,8 +247,8 @@ public:
     float output_squared_error( const Tensor &target ) {
         float err = 0;
         for ( size_t i = 0; i < net_scheme.back(); i++) {
-            err += ( target[i] - layers.back().layState.output[i] ) 
-                 * ( target[i] - layers.back().layState.output[i] );
+            err += ( target[i] - layers.back()->layState.output[i] )
+                 * ( target[i] - layers.back()->layState.output[i] );
         }
         return err;
     }
@@ -266,9 +267,9 @@ public:
         std::cout << "Weights:" << endl;
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
-                print_vec( layers[lay].getWeights().row(i) );
-                std::cout << "  [ " << layers[lay].getBias()[i] << " ]" << endl;
+            for ( size_t i = 0; i < layers[lay]->getSize(); i++ ) {
+                print_vec( layers[lay]->getWeights().row(i) );
+                std::cout << "  [ " << layers[lay]->getBias()[i] << " ]" << endl;
             }
         }
         std::cout << endl;
@@ -278,9 +279,9 @@ public:
         std::cout << "Gradient:" << endl;
         for ( size_t lay = 1; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            for ( size_t i = 0; i < layers[lay].getSize(); i++ ) {
-                print_vec( layers[lay].layState.epsilon.row(i) );
-                std::cout << "  [ " << layers[lay].layState.epsilon_bias[i] << " ]" << endl;
+            for ( size_t i = 0; i < layers[lay]->getSize(); i++ ) {
+                print_vec( layers[lay]->layState.epsilon.row(i) );
+                std::cout << "  [ " << layers[lay]->layState.epsilon_bias[i] << " ]" << endl;
             }
         }
         std::cout << endl;
@@ -290,7 +291,7 @@ public:
         std::cout << "Output:" << endl;
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
             std::cout << "-------------" << endl;
-            print_vec( layers[lay].layState.output );
+            print_vec( layers[lay]->layState.output );
             std::cout << endl;
         }
         std::cout << endl;
