@@ -66,6 +66,10 @@ public:
     virtual Tensor &getWeights() = 0;
     virtual Tensor &getBias() = 0;
 
+    
+    void set_weights( const Tensor &w ) { weights = w; }
+    void set_biases( const Tensor &b ) { bias = b; }
+
     //virtual void initialize_uniform( float min = 0, float max = 0.1 ) = 0;
     //virtual void initialize_gauss( float min = 0, float max = 0.1 ) = 0;
 
@@ -162,14 +166,6 @@ public:
         return bias;
     }
 
-    void set_biases( Tensor b )
-    {
-        bias = b;
-    }
-    void set_weights( Tensor w )
-    {
-        weights = w;
-    }
     void set_potential( Tensor pot )
     {
         layState.potential = pot;
