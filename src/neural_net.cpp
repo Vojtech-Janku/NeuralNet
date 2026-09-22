@@ -160,7 +160,7 @@ void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
         //  CREATE NEW NEURAL NET
     vector<size_t> scheme = {2, 5, 1};
     vector<Activation> act = { a, a };
-    Neural_net net( scheme, act, lr );
+    Neural_net net( scheme, act);
     net.init_unif( 0, 1 );
         // DATA
     Tensor data = to_tensor({
@@ -169,7 +169,7 @@ void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
     //Tensor expected = to_tensor( { {0.001}, {0.999}, {0.999}, {0.001} } );
     Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
         // LEARNING
-    bool trained = net.train( data, expected, data.getShape()[0], Optimizer::ADAM, 0.01, epochs );
+    bool trained = net.train( data, expected, data.getShape()[0], lr, 0.001, Optimizer::ADAM, 0.01, epochs );
         // RESULT
     Tensor pred = net.predict( data );
     assert( trained );
@@ -177,32 +177,33 @@ void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
 }
 
 // creating neural net, with some prints
-Neural_net make_model( vector<size_t> scheme, vector<Activation> act, float learning_rate, float lr_decay, float momentum ) {
+Neural_net make_model( vector<size_t> scheme, vector<Activation> act) {
     std::cout << "Creating neural net, scheme = ";
     print_vec( scheme );
     std::cout << ", activation = [ " << get_str( act[0] );
     for ( size_t i = 1; i < act.size(); i++ ) { std::cout << ", " << get_str( act[i] ); }
-    std::cout << " ], learning_rate = " << learning_rate << ", lr_decay = " << lr_decay << ", momentum = " << momentum << endl;
-    return Neural_net( scheme, act, learning_rate, lr_decay, momentum );
+    std::cout << " ]";
+    return Neural_net( scheme, act);
 }
 
 // creating neural net, with some prints
-Neural_net make_conv_model( vector<size_t> scheme, vector<Activation> act, float learning_rate, float lr_decay, float momentum ) {
+Neural_net make_conv_model( vector<size_t> scheme, vector<Activation> act) {
     std::cout << "Creating neural net, scheme = ";
     print_vec( scheme );
     std::cout << ", activation = [ " << get_str( act[0] );
     for ( size_t i = 1; i < act.size(); i++ ) { std::cout << ", " << get_str( act[i] ); }
-    std::cout << " ], learning_rate = " << learning_rate << ", lr_decay = " << lr_decay << ", momentum = " << momentum << endl;
-    return Neural_net( scheme, act, learning_rate, lr_decay, momentum );
+    std::cout << " ]";
+    return Neural_net( scheme, act);
 }
 
 // training neural net, with some prints
-void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, 
-                  size_t batch_size, Optimizer opt, float prec, size_t epochs ) {
+void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, size_t batch_size, 
+                  float learning_rate, float lr_decay, Optimizer opt, 
+                  float prec, size_t epochs) {
     std::cout << "Training with params:     batch_size = " << batch_size << ", optimizer = " << get_str(opt)
               << ", epochs = " << epochs << ", precision = " << prec << "..." << endl;
     auto start = chrono::steady_clock::now();
-    bool trained = net.train( train_data, train_target, batch_size, opt, prec, epochs );
+    bool trained = net.train( train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs);
     auto end = chrono::steady_clock::now();
     std::cout << "Computation stopped after model reached " 
               << ( (trained) ? "precision." : "maximum epochs." ) << endl;
@@ -239,7 +240,7 @@ void execute_mlp_workflow() {
     vector<size_t> scheme = { input_size, 64, 30, output_size };
     vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SIGMOID };
     float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9;
-    Neural_net net = make_model( scheme, act, learning_rate, lr_decay, moment );
+    Neural_net net = make_model( scheme, act);
     net.init_gauss();
 
         // LEARNING
@@ -248,7 +249,7 @@ void execute_mlp_workflow() {
     float prec = 0.1;
     size_t epochs = 20;
     Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, opt, prec, epochs );
+    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs );
 
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );
@@ -304,10 +305,11 @@ void execute_conv_workflow() {
         // LEARNING
     std::cout << "- Model Learning" << endl;
     size_t batch_size = 64;
+    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9;
     float prec = 0.1;
     size_t epochs = 20;
     Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, opt, prec, epochs );
+    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs );
 
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );

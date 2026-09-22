@@ -29,8 +29,6 @@ string get_str( Optimizer opt ) {
 //  train and predict functions
 class Neural_net
 {
-    float learning_rate, lr_decay;
-    float momentum;
     size_t input_size;         // number of neurons in input layer
     vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
     vector<Activation> act_funs;
@@ -40,10 +38,10 @@ class Neural_net
 
 public:
     Neural_net( size_t input_size)
-    : learning_rate(0.01), lr_decay(0.001), momentum(0.5), input_size(input_size) {}
+    : input_size(input_size) {}
 
     Neural_net( vector<size_t> scheme, vector<Activation> funs, float l_rate = 0.01, float l_decay = 0.001, float moment = 0.5 ) 
-    : learning_rate( l_rate ), lr_decay( l_decay ), momentum(moment), input_size( scheme[0] ), 
+    : input_size( scheme[0] ), 
       net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
         for ( size_t i = 1; i < scheme.size(); i++ ) {
@@ -185,15 +183,16 @@ public:
 
 
     // updates all weights
-    void modify_weights( Optimizer opt, const size_t &it = 0 ) {
+    void modify_weights( float learning_rate, Optimizer opt, const size_t &it = 0 ) {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
             layers[lay]->modify_weights( learning_rate );
         }
     }
 
-    bool train( const Tensor &data, const Tensor &target, 
-                size_t batch_size, Optimizer opt, float precision = 0.001, size_t epochs = 100000 )
+    bool train( const Tensor &data, const Tensor &target, size_t batch_size, 
+                float learning_rate, float lr_decay, Optimizer opt = Optimizer::GRAD, 
+                float precision = 0.001, size_t epochs = 100000 )
     {
         auto lr_init = learning_rate;
         float err;
@@ -206,7 +205,7 @@ public:
             while( batch_start+batch_size < data.getShape()[0] ) {
                 compute_gradient( data, target, make_pair(batch_start, batch_start+batch_size) );
                 //if (opt == Optimizer::ADAM) compute_adam();
-                modify_weights(opt, iter);
+                modify_weights(learning_rate, opt, iter);
                 iter++;
                 if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
                 batch_start += batch_size;
@@ -214,7 +213,7 @@ public:
             // spaghetti code but whatever
             compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
             //if (opt == Optimizer::ADAM) compute_adam();
-            modify_weights(opt, iter);
+            modify_weights(learning_rate, opt, iter);
             iter++;
             if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
 
