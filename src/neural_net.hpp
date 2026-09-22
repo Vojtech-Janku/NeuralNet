@@ -33,7 +33,7 @@ class Neural_net
     size_t input_size;         // number of neurons in input layer
     vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
     vector<Activation> act_funs;
-    vector<DeepLayer> layers;
+    vector<Layer> layers;
 
     float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
 
@@ -55,7 +55,7 @@ public:
         return net_scheme;
     }
 
-    vector<DeepLayer> &getLayers()
+    vector<Layer> &getLayers()
     {
         return layers;
     }
@@ -81,7 +81,7 @@ public:
         layers.push_back( ConvLayer( input_height, input_width, kernel_size, stride, padding, a ) );
     }
 
-    void init_unif( float min = 0, float max = 0.1 ) {
+    /*void init_unif( float min = 0, float max = 0.1 ) {
         for ( auto &lay : layers ) { lay.initialize_uniform(min, max); }
     }
 
@@ -90,7 +90,7 @@ public:
         {
             lay.initialize_gauss( 0, sqrt( 2.0 / lay.getInputSize() ) );
         }
-    }
+    }*/
 
     // basic feed forward algorithm
     const Tensor &feed_forward( const Tensor &input ) {
@@ -139,7 +139,7 @@ public:
     void compute_gradient( const Tensor &data, const Tensor &labels, 
                             pair<size_t,size_t> batch_range ) {
         // initialize epsilon = 0;
-        for ( DeepLayer &lay : layers ) {
+        for ( Layer &lay : layers ) {
             lay.layState.epsilon.clear();
             lay.layState.epsilon_bias.clear();
         }
@@ -153,7 +153,7 @@ public:
             compute_epsilon( data.row(k) );
         }
         // average the gradient
-        for ( DeepLayer &lay : layers ) {
+        for ( Layer &lay : layers ) {
             lay.layState.epsilon / ( batch_range.second-batch_range.first );
         }
     }
@@ -185,42 +185,13 @@ public:
     */
 
     // ---- single weight update functions for optimizers ---
-    void update_gradient_descent( float &weight, const float &gradient ) {
-        weight -= learning_rate*gradient;
-    }
 
-    void update_momentum( float &weight, const float &gradient, float &m) {
-        m = ( momentum*m + learning_rate*gradient );
-        weight -= m;
-    }
-
-    void update_adam( float &weight, const float &m, const float &v, const size_t &it ) {
-        float mhat = m / (1 - powf(beta1, it) ), vhat = v / (1 - powf(beta2, it) );
-        weight -= learning_rate * mhat / ( sqrt( vhat ) + eps );
-    }
 
     // updates all weights
     void modify_weights( Optimizer opt, const size_t &it = 0 ) {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing
-            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].getInputSize(); i++ ) {
-                    switch (opt)
-                    {
-                    case Optimizer::GRAD:
-                        update_gradient_descent( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i) );
-                        break;
-                    /*
-                    case Optimizer::MOMENTUM:
-                        update_momentum( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i), layers[lay].layState.m.at(j,i) );
-                        break;
-                    case Optimizer::ADAM:
-                        update_adam( layers[lay].getWeights().at(j,i), layers[lay].layState.m.at(j,i), layers[lay].layState.v.at(j,i), it );
-                        break;
-                    */
-                    }
-                }
-            }
+            layers[lay].modify_weights( learning_rate );
         }
     }
 

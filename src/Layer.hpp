@@ -73,6 +73,29 @@ public:
     virtual void compute_derivative() = 0;
     virtual void compute_epsilon( const Tensor &out_prev ) = 0;
 
+    // TODO: add optimizers
+    void modify_weights( float learning_rate ) {
+        update_gradient_descent( learning_rate );
+    }
+
+    void update_gradient_descent( float learning_rate ) {
+        for (size_t i = 0; i < weights.getSize(); i++)
+        {
+            weights[i] -= learning_rate*layState.epsilon[i];
+        }
+        
+        
+    }
+
+    /*void update_momentum( float &weight, const float &gradient, float &m) {
+        m = ( momentum*m + learning_rate*gradient );
+        weight -= m;
+    }
+
+    void update_adam( float &weight, const float &m, const float &v, const size_t &it ) {
+        float mhat = m / (1 - powf(beta1, it) ), vhat = v / (1 - powf(beta2, it) );
+        weight -= learning_rate * mhat / ( sqrt( vhat ) + eps );
+    }*/
 
     virtual ~Layer() {}
 };
