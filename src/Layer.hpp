@@ -83,8 +83,6 @@ public:
         {
             weights[i] -= learning_rate*layState.epsilon[i];
         }
-        
-        
     }
 
     /*void update_momentum( float &weight, const float &gradient, float &m) {
@@ -293,11 +291,6 @@ class ConvLayer : public Layer
     int output_width;
 
 public:
-    string getType() 
-    {
-        return "CONVOLUTIONAL";
-    }
-
     ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) 
     : Layer( {kernel_size, kernel_size}, {1}, state(output_height, output_width, kernel_size) ),
@@ -305,6 +298,15 @@ public:
       kernel_size(kernel_size), stride(stride), padding(padding),
       output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
     {}
+
+    string getType() 
+    {
+        return "CONVOLUTIONAL";
+    }
+
+    size_t getSize() {
+        return kernel_size*kernel_size;
+    }
 
     Tensor &getWeights() {
         return weights;
