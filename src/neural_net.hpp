@@ -46,7 +46,7 @@ public:
       net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
         for ( size_t i = 1; i < scheme.size(); i++ ) {
-            add_layer( LayerType::DEEP, act_funs[i-1], scheme[i] );
+            add_layer( act_funs[i-1], scheme[i] );
         }
     }
 
@@ -66,21 +66,19 @@ public:
     //    layers.push_back(     DeepLayer( layer_size, input_size, a ) );
     //}
 
-    void add_layer( LayerType layer_type, Activation a, size_t layer_size ) {
+    //Deep layer
+    void add_layer( Activation a, size_t layer_size ) {
 
         size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
-        switch (layer_type)
-        {
-        case LayerType::DEEP:
-            layers.push_back( DeepLayer( layer_size, layer_input, a ) );
-            break;
-        case LayerType::CONVOLUTIONAL:
-            //layers.push_back( ConvLayer( layer_size, layer_input, a ) );
-            break;        
-        default:
-            break;
-        }
-        
+        layers.push_back( DeepLayer( layer_size, layer_input, a ) );
+    }
+
+    // Conv layer
+    void add_layer( Activation a, size_t input_height, size_t input_width, size_t kernel_size ) {
+        int stride = 1;
+        bool padding = true;
+        size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
+        layers.push_back( ConvLayer( input_height, input_width, kernel_size, stride, padding, a ) );
     }
 
     void init_unif( float min = 0, float max = 0.1 ) {
