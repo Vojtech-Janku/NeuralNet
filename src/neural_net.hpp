@@ -40,7 +40,7 @@ public:
     Neural_net( size_t input_size)
     : input_size(input_size) {}
 
-    Neural_net( vector<size_t> scheme, vector<Activation> funs, float l_rate = 0.01, float l_decay = 0.001, float moment = 0.5 ) 
+    Neural_net( vector<size_t> scheme, vector<Activation> funs) 
     : input_size( scheme[0] ), 
       net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
@@ -191,8 +191,8 @@ public:
     }
 
     bool train( const Tensor &data, const Tensor &target, size_t batch_size, 
-                float learning_rate, float lr_decay, Optimizer opt = Optimizer::GRAD, 
-                float precision = 0.001, size_t epochs = 100000 )
+                float learning_rate = 0.1, float lr_decay = 0.001, Optimizer opt = Optimizer::GRAD, 
+                float precision = 0.001, size_t epochs = 100000, float momentum = 0.5 )
     {
         auto lr_init = learning_rate;
         float err;
