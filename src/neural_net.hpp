@@ -46,7 +46,7 @@ public:
       net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
         assert( scheme.size() > 1 );
         for ( size_t i = 1; i < scheme.size(); i++ ) {
-            add_layer( scheme[i], act_funs[i-1] );
+            add_layer( LayerType::DEEP, act_funs[i-1], scheme[i] );
         }
     }
 
@@ -66,16 +66,16 @@ public:
     //    layers.push_back(     DeepLayer( layer_size, input_size, a ) );
     //}
 
-    void add_layer( int layer_type, Activation a, size_t layer_size ) {
+    void add_layer( LayerType layer_type, Activation a, size_t layer_size ) {
 
         size_t layer_input = getLayers().empty() ? getScheme().at(0) : getLayers().back().getSize();
         switch (layer_type)
         {
-        case 0:
+        case LayerType::DEEP:
             layers.push_back( DeepLayer( layer_size, layer_input, a ) );
             break;
-        case 1:
-            layers.push_back( ConvLayer( layer_size, layer_input, a ) );
+        case LayerType::CONVOLUTIONAL:
+            //layers.push_back( ConvLayer( layer_size, layer_input, a ) );
             break;        
         default:
             break;
@@ -170,6 +170,7 @@ public:
                 v = ( beta2*v + (1 - beta2)*epsilon*epsilon );   
     }
 
+    /*
     void compute_adam() {
         for ( size_t lay = 0; lay < layers.size(); lay++ ) {
           #pragma omp parallel for num_threads(16)                    // multiprocessing 
@@ -183,6 +184,7 @@ public:
             }
         } 
     }
+    */
 
     // ---- single weight update functions for optimizers ---
     void update_gradient_descent( float &weight, const float &gradient ) {
@@ -210,12 +212,14 @@ public:
                     case Optimizer::GRAD:
                         update_gradient_descent( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i) );
                         break;
+                    /*
                     case Optimizer::MOMENTUM:
                         update_momentum( layers[lay].getWeights().at(j,i), layers[lay].layState.epsilon.at(j,i), layers[lay].layState.m.at(j,i) );
                         break;
                     case Optimizer::ADAM:
                         update_adam( layers[lay].getWeights().at(j,i), layers[lay].layState.m.at(j,i), layers[lay].layState.v.at(j,i), it );
                         break;
+                    */
                     }
                 }
             }
@@ -235,7 +239,7 @@ public:
             batch_start = 0;
             while( batch_start+batch_size < data.getShape()[0] ) {
                 compute_gradient( data, target, make_pair(batch_start, batch_start+batch_size) );
-                if (opt == Optimizer::ADAM) compute_adam();
+                //if (opt == Optimizer::ADAM) compute_adam();
                 modify_weights(opt, iter);
                 iter++;
                 if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
@@ -243,7 +247,7 @@ public:
             }
             // spaghetti code but whatever
             compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
-            if (opt == Optimizer::ADAM) compute_adam();
+            //if (opt == Optimizer::ADAM) compute_adam();
             modify_weights(opt, iter);
             iter++;
             if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay

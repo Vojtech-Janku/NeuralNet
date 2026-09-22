@@ -18,9 +18,47 @@ protected:
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
 
+    struct state 
+    {
+        Tensor potential;    // potential of each neuron
+        Tensor output;       // output of each neuron
+        Tensor derivative;   // derivative of sigma( potential )
+        Tensor epsilon;      // gradient
+        Tensor epsilon_bias; // gradient for bias weights
+        Tensor err_output;   // (d Err / d output) for each neuron
+        // TODO: optimizer computations
+
+        state( size_t n, size_t incoming )
+        : potential(    { n } ),
+          output(       { n } ),
+          derivative(   { n } ),
+          epsilon(      { n, incoming } ),
+          epsilon_bias( { n } ),
+          err_output(   { n } )
+          //m(            { n, incoming } ),
+          //v(            { n, incoming } ),
+          //m_bias(       { n } ),
+          //v_bias(       { n } )
+        {}
+
+        state( size_t out_height, size_t out_width, size_t kernel_size )
+        : potential(    { out_height, out_width } ),
+          output(       { out_height, out_width } ),
+          derivative(   { out_height, out_width } ),
+          epsilon(      { kernel_size, kernel_size } ),
+          epsilon_bias( { 1 } ),
+          err_output(   { out_height, out_width } )
+        {}
+    };
+
+    
+
 public:
-    Layer( vector<size_t> weight_shape, vector<size_t> bias_shape ) 
-    : weights(weight_shape), bias(bias_shape) {}
+    Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState ) 
+    : weights(weight_shape), bias(bias_shape), layState(layState) 
+    {}
+
+    state layState;
 
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
@@ -45,6 +83,7 @@ class DeepLayer : public Layer
 {
     // Struct representing the inner state of the layer.
     // Used for storing all computations.
+    /*
     struct state 
     {
         Tensor potential;    // potential of each neuron
@@ -59,19 +98,10 @@ class DeepLayer : public Layer
         Tensor m_bias;
         Tensor v_bias;
 
-        state( size_t n, size_t incoming )
-        : potential(    { n } ),
-          output(       { n } ),
-          derivative(   { n } ),
-          epsilon(      { n, incoming } ),
-          epsilon_bias( { n } ),
-          err_output(   { n } ),
-          m(            { n, incoming } ),
-          v(            { n, incoming } ),
-          m_bias(       { n } ),
-          v_bias(       { n } )
-        {}
+
     };
+
+    */
 
 public:
     //vector<float> bias;
@@ -81,13 +111,11 @@ public:
     Activation act;
     float (*activation)(float);         // activation function
     float (*activ_derivative)(float);   // derivative of activation function
-    state layState;
 
     DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
-    : Layer( { neuron_count, input_count}, {neuron_count} ),
+    : Layer( { neuron_count, input_count}, {neuron_count}, state(neuron_count, input_count) ),
       size(neuron_count), input_size(input_count),
-      act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second ),
-      layState( neuron_count, input_count ) 
+      act(act), activation( activ_functions.at(act).first ), activ_derivative( activ_functions.at(act).second )
     {}
 
     string getType()
@@ -164,6 +192,8 @@ public:
     // the core of feed forward - computes potential and output for this layer
     void compute_potential( const Tensor &input)
     {
+        //input.flatten(); TODO: handle this in outside?
+
       #pragma omp parallel for num_threads(16)                    // multiprocessing
         for ( size_t j = 0; j < getSize(); j++ )
         {
@@ -227,25 +257,6 @@ public:
 
 class ConvLayer : public Layer
 {
-    struct state 
-    {
-        Tensor potential;    // potential of each neuron
-        Tensor output;       // output of each neuron
-        Tensor derivative;   // derivative of sigma( potential )
-        Tensor epsilon;      // gradient
-        Tensor epsilon_bias; // gradient for bias weights
-        Tensor err_output;   // (d Err / d output) for each neuron
-        // TODO: optimizer computations
-
-        state( size_t out_height, size_t out_width, size_t kernel_size )
-        : potential(    { out_height, out_width } ),
-          output(       { out_height, out_width } ),
-          derivative(   { out_height, out_width } ),
-          epsilon(      { kernel_size, kernel_size } ),
-          epsilon_bias( { 1 } ),
-          err_output(   { out_height, out_width } )
-        {}
-    };
 
     int input_height;
     int input_width;
@@ -258,7 +269,6 @@ class ConvLayer : public Layer
     int output_height;
     int output_width;
 
-    state layState;
 public:
     string getType() 
     {
@@ -267,11 +277,10 @@ public:
 
     ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
         int kernel_size, int stride, bool padding, Activation act ) 
-    : Layer( {kernel_size, kernel_size}, {1} ),
+    : Layer( {kernel_size, kernel_size}, {1}, state(output_height, output_width, kernel_size) ),
       input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
       kernel_size(kernel_size), stride(stride), padding(padding),
-      output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1),
-      layState(state(output_height, output_width, kernel_size))
+      output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
     {}
 
     Tensor &getWeights() {
@@ -284,6 +293,9 @@ public:
 
     void compute_potential( const Tensor &input) 
     {
+        //Tensor input = const_input;
+        //input.reshape( {input_height,input_width} );
+
         float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t neuron_i = 0; neuron_i < output_height; neuron_i++ ) 
