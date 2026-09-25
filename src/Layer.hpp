@@ -3,7 +3,6 @@
 #include <vector>
 #include "activation.hpp"
 #include "Tensor.hpp"
-
 using namespace std;
 
 template< typename T >
@@ -73,9 +72,10 @@ protected:
 
 public:
     Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState, Activation act ) 
-    : weights(weight_shape), bias(bias_shape), layState(layState),
+    : weights(weight_shape), bias(bias_shape), 
       act(act), activation( activ_functions.at(act).first ), 
-      activ_derivative( activ_functions.at(act).second )
+      activ_derivative( activ_functions.at(act).second ),
+      layState(layState)
     {}
 
     state layState;
@@ -159,7 +159,7 @@ public:
     size_t size;
     size_t input_size;
 
-    DeepLayer( int neuron_count, int input_count, Activation act = Activation::RELU )
+    DeepLayer( size_t neuron_count, size_t input_count, Activation act = Activation::RELU )
     : Layer( { neuron_count, input_count}, {neuron_count}, state(neuron_count, input_count), act ),
       size(neuron_count), input_size(input_count)
     {}
@@ -261,20 +261,21 @@ public:
 class ConvLayer : public Layer
 {
 
-    int input_height;
-    int input_width;
+    size_t input_height;
+    size_t input_width;
+    size_t kernel_size;
     //int C_in;
     //int C_out;
-    int stride;
+    size_t stride;
     bool padding;
-    int kernel_size;
+    
 
-    int output_height;
-    int output_width;
+    size_t output_height;
+    size_t output_width;
 
 public:
-    ConvLayer( int input_height, int input_width, //int C_in, int C_out, 
-        int kernel_size, int stride, bool padding, Activation act ) 
+    ConvLayer( size_t input_height, size_t input_width, //int C_in, int C_out, 
+        size_t kernel_size, size_t stride, bool padding, Activation act ) 
     : Layer( {kernel_size, kernel_size}, {1}, state(input_height-kernel_size+1, input_width-kernel_size+1, kernel_size), act ),
       input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
       kernel_size(kernel_size), stride(stride), padding(padding),
@@ -308,7 +309,6 @@ public:
         //Tensor input = const_input;
         //input.reshape( {input_height,input_width} );
 
-        float potential;
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t neuron_i = 0; neuron_i < output_height; neuron_i++ ) 
         {

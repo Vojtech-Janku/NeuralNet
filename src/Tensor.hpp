@@ -6,8 +6,9 @@ using namespace std;
 
 struct Tensor 
 {
-    vector<float> data;
     vector<size_t> shape;
+    vector<float> data;
+    
 
     Tensor( vector<size_t> shape ) : shape(shape) {
         size_t total = 1;
