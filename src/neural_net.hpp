@@ -6,6 +6,8 @@
 #include <vector>
 #include "utils.hpp"
 #include "Layer.hpp"
+#include "DeepLayer.hpp"
+#include "ConvLayer.hpp"
 #include <memory>
 
 using namespace std;
