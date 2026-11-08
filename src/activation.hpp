@@ -30,7 +30,7 @@ float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }  //{ return x / (1 + ab
 float tanh_fun( float x ) { return std::tanh(x); }
 float step_diff( float ) { return 0; }
 float relu_diff( float x ) { return ( x <= 0 ) ? 0 : 1; }
-float leaky_relu_diff( float x ) { return ( x < 0 ) ? 1/16 : 1; }
+float leaky_relu_diff( float x ) { return ( x < 0 ) ? 1.0f/16 : 1; }
 float sigmoid_diff( float x ) { return sigmoid(x) * (1 - sigmoid(x) ); }
 float tanh_diff( float x ) { return 1 - std::pow(std::tanh(x), 2); }
 map< Activation, pair<act_fun, act_fun> > activ_functions = {
