@@ -1,24 +1,20 @@
 #!/bin/bash
-## change this file to your needs
+# Build with CMake and run. Extra arguments are passed to the program, e.g. `./run.sh test`.
+set -e
+cd "$(dirname "$0")"
 
-echo "Adding some modules"
-
-module add gcc #-10.2
-
+# on the university cluster, load a recent gcc first (no-op elsewhere)
+if command -v module >/dev/null 2>&1; then module add gcc; fi
 
 echo "#################"
 echo "    COMPILING    "
 echo "#################"
-
-## dont forget to use comiler optimizations (e.g. -O3 or -Ofast)
-g++ -Wall -std=c++17 -O3 src/neural_net.cpp -o network
-
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
 
 echo "#################"
 echo "     RUNNING     "
 echo "#################"
-
-## use nice to decrease priority in order to comply with aisa rules
-## https://www.fi.muni.cz/tech/unix/computation.html.en
-## especially if you are using multiple cores
-nice -n 19 ./network
+# nice lowers the priority, as required on shared machines (https://www.fi.muni.cz/tech/unix/computation.html.en)
+# run from the repo root so the relative data/ paths resolve
+nice -n 19 ./build/network "$@"
