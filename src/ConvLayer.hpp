@@ -7,20 +7,17 @@ class ConvLayer : public Layer
     size_t input_height;
     size_t input_width;
     size_t kernel_size;
-    //int C_in;
-    //int C_out;
     size_t stride;
     bool padding;
-    
 
     size_t output_height;
     size_t output_width;
 
 public:
-    ConvLayer( size_t input_height, size_t input_width, //int C_in, int C_out, 
-        size_t kernel_size, size_t stride, bool padding, Activation act ) 
+    ConvLayer( size_t input_height, size_t input_width,
+        size_t kernel_size, size_t stride, bool padding, Activation act )
     : Layer( {kernel_size, kernel_size}, {1}, state(input_height-kernel_size+1, input_width-kernel_size+1, kernel_size), act ),
-      input_height(input_height), input_width(input_width), //C_in(C_in), C_out(C_out),
+      input_height(input_height), input_width(input_width),
       kernel_size(kernel_size), stride(stride), padding(padding),
       output_height(input_height-kernel_size+1), output_width(input_width-kernel_size+1)
     {}
@@ -47,11 +44,9 @@ public:
         return bias;
     }
 
-    void compute_potential( const Tensor &input) 
+    // input must be a 2D {input_height, input_width} Tensor (read with at(i,j))
+    void compute_potential( const Tensor &input)
     {
-        //Tensor input = const_input;
-        //input.reshape( {input_height,input_width} );
-
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
         for ( size_t neuron_i = 0; neuron_i < output_height; neuron_i++ ) 
         {
@@ -89,8 +84,6 @@ public:
     // followed by a DeepLayer, not another ConvLayer, until that's implemented.
     void compute_epsilon( const Tensor &out_prev )
     {
-        //TODO: optimize mutliprocessing
-
         for (size_t i = 0; i < output_height; i++)
         {
             for (size_t j = 0; j < output_width; j++)
