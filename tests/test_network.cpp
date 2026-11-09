@@ -2,8 +2,33 @@
 // Kept in one file for now: activation.hpp / utils.hpp still define non-inline functions,
 // so including them from a second test .cpp would break linking. Split up after the header cleanup.
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
 #include "neural_net.hpp"
+
+// ---------- activation functions ----------
+
+// each activation's derivative must match a central finite difference of the activation itself.
+// Sample points stay away from 0, where step / relu / leaky relu have a kink.
+class ActivationDerivative : public ::testing::TestWithParam<Activation> {};
+
+TEST_P( ActivationDerivative, MatchesFiniteDifferences ) {
+    const auto [f, df] = activ_functions.at( GetParam() );
+    const float h = 1e-3f;
+    for ( float x : { -3.0f, -1.2f, -0.4f, -0.1f, 0.1f, 0.5f, 1.3f, 2.5f } ) {
+        float numeric = ( f(x + h) - f(x - h) ) / ( 2*h );
+        EXPECT_NEAR( df(x), numeric, 1e-3f ) << "x = " << x;
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P( Activations, ActivationDerivative,
+    ::testing::Values( Activation::STEP, Activation::RELU, Activation::LEAKY_RELU,
+                       Activation::SIGMOID, Activation::TANH ),
+    []( const ::testing::TestParamInfo<Activation> &info ) {
+        std::string name = get_str( info.param );                     // e.g. "Leaky Relu"
+        name.erase( std::remove( name.begin(), name.end(), ' ' ), name.end() );   // test names can't contain spaces
+        return name;
+    } );
 
 // ---------- forward pass with hand-set weights ----------
 
