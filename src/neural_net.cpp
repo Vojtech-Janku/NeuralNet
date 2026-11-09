@@ -238,7 +238,7 @@ void execute_mlp_workflow() {
     size_t input_size = train_vectors[0].size();
     size_t output_size = 10;
     vector<size_t> scheme = { input_size, 64, 30, output_size };
-    vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SIGMOID };
+    vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SOFTMAX };
     float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9;
     Neural_net net = make_model( scheme, act);
     net.init_gauss();

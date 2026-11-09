@@ -26,6 +26,12 @@ class Neural_net
     vector<Activation> act_funs;
     vector<unique_ptr<Layer>> layers;
 
+    // softmax's derivative shortcut (see DeepLayer::compute_derivative) is only valid on the output layer
+    void throw_if_after_softmax() const {
+        if ( !layers.empty() && layers.back()->getActivation() == Activation::SOFTMAX )
+            throw std::invalid_argument( "add_layer: a SOFTMAX layer must be the last layer" );
+    }
+
 public:
     Neural_net( size_t input_size)
     : input_size(input_size) {}
@@ -57,13 +63,16 @@ public:
 
     //Deep layer
     void add_layer( Activation a, size_t layer_size ) {
-
+        throw_if_after_softmax();
         size_t layer_input = getLayers().empty() ? input_size : getLayers().back()->getSize();
         layers.push_back( make_unique<DeepLayer>( layer_size, layer_input, a ) );
     }
 
     // Conv layer
     void add_layer( Activation a, size_t input_height, size_t input_width, size_t kernel_size ) {
+        throw_if_after_softmax();
+        if ( a == Activation::SOFTMAX )
+            throw std::invalid_argument( "add_layer: SOFTMAX is only supported on a deep (output) layer, not a conv layer" );
         int stride = 1;
         bool padding = true;
         layers.push_back( make_unique<ConvLayer>( input_height, input_width, kernel_size, stride, padding, a ) );
