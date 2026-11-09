@@ -84,6 +84,13 @@ protected:
         return generator;
     }
 
+    // SOFTMAX is vector-valued, so it has no scalar function - DeepLayer handles it directly
+    static act_fun scalar_activation( Activation a, bool derivative ) {
+        if ( a == Activation::SOFTMAX ) return nullptr;
+        const auto &funs = activ_functions.at(a);
+        return derivative ? funs.second : funs.first;
+    }
+
     // one optimizer step for a single parameter tensor
     static void update_params( Tensor &params, const Tensor &grad, Tensor &m, Tensor &v,
                                float learning_rate, Optimizer opt, size_t iter, float momentum ) {
@@ -115,8 +122,8 @@ protected:
 public:
     Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState, Activation act ) 
     : weights(weight_shape), bias(bias_shape), 
-      act(act), activation( activ_functions.at(act).first ), 
-      activ_derivative( activ_functions.at(act).second ),
+      act(act), activation( scalar_activation(act, false) ),
+      activ_derivative( scalar_activation(act, true) ),
       m_weights(weight_shape), v_weights(weight_shape), m_bias(bias_shape), v_bias(bias_shape),
       layState(layState)
     {}
