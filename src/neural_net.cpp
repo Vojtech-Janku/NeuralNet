@@ -104,75 +104,6 @@ float get_accuracy( const vector<int> &pred, const vector<int> &target ) {
     return ( count_same( pred, target ) / (float) pred.size() );
 }
 
-// minimal XOR from lecture, with step activation function
-void test_minimal_XOR() {
-    std::cout << "Testing minimal (lecture) XOR:" << endl;
-    // vector<size_t> scheme = {2, 2, 1};
-    // vector<Activation> act = { Activation::STEP, Activation::STEP };
-    // Neural_net net( scheme, act );
-    Neural_net net( 2 );
-    net.add_layer( Activation::STEP, 2 );
-    net.add_layer( Activation::STEP, 1 );
-        // SET WEIGHTS AND BIASES
-    net.getLayers().at(0)->set_weights( Tensor( { 2, 2 }, { 2, 2, -2, -2 } ) );
-    net.getLayers().at(1)->set_weights( Tensor( { 1, 2 }, { 1, 1 } ) );
-    net.getLayers().at(0)->set_biases( Tensor( { 2 }, { -1, 3 } ) );   // neuron 1 = OR, neuron 2 = NAND
-    net.getLayers().at(1)->set_biases( Tensor( { 1 }, { -2 } ) );
-        // DATA
-    Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
-    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
-        // RESULT
-    for ( size_t i = 0; i < points.getShape()[0]; i++ ) {
-        assert( net.feed_forward( points.row(i) ) == expected.row(i) );
-    }
-    std::cout << "PASSED" << endl;
-}
-
-// simple neural net with 1 conv layer
-void test_simple_conv_layer() {
-    std::cout << "Testing simple conv layer (forward pass):" << endl;
-    // 3x3 input, 2x2 kernel, stride 1, no padding -> 2x2 output
-    Neural_net net( 9 );
-    net.add_layer( Activation::RELU, 3, 3, 2 );
-        // SET WEIGHTS AND BIASES
-    // kernel [[1,0],[0,1]] sums each window's top-left and bottom-right pixel
-    net.getLayers().at(0)->set_weights( Tensor( { 2, 2 }, { 1, 0, 0, 1 } ) );
-    net.getLayers().at(0)->set_biases( Tensor( { 1 }, { -7 } ) );
-        // DATA
-    Tensor image( { 3, 3 }, { 1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9 } );
-    // raw sums: 1+5=6, 2+6=8, 4+8=12, 5+9=14; minus bias 7 -> -1, 1, 5, 7; ReLU clips -1 to 0
-    Tensor expected( { 2, 2 }, { 0, 1,
-                                 5, 7 } );
-        // RESULT
-    assert( net.feed_forward( image ) == expected );
-    std::cout << "PASSED" << endl;
-}
-
-// XOR solved by a more general network
-void test_XOR_backprop( Activation a, float lr, size_t epochs = 10000000 ) {
-    std::cout << "Testing XOR (activation = " << get_str( a ) 
-              << ") with backpropagation:" << endl;
-        //  CREATE NEW NEURAL NET
-    vector<size_t> scheme = {2, 5, 1};
-    vector<Activation> act = { a, a };
-    Neural_net net( scheme, act);
-    net.init_unif( 0, 1 );
-        // DATA
-    Tensor data = to_tensor({
-        {0,0}, {0,1}, {1,0}, {1,1}
-    });
-    //Tensor expected = to_tensor( { {0.001}, {0.999}, {0.999}, {0.001} } );
-    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
-        // LEARNING
-    bool trained = net.train( data, expected, data.getShape()[0], lr, 0.001, Optimizer::ADAM, 0.01, epochs );
-        // RESULT
-    Tensor pred = net.predict( data );
-    assert( trained );
-    std::cout << "PASSED" << endl;
-}
-
 // creating neural net, with some prints
 Neural_net make_model( vector<size_t> scheme, vector<Activation> act) {
     std::cout << "Creating neural net, scheme = ";
@@ -334,21 +265,8 @@ void execute_conv_workflow() {
 }
 
 
-// quick sanity tests - run with: ./network test
-void run_tests() {
-    test_minimal_XOR();
-    test_simple_conv_layer();
-    for ( Activation a : { Activation::RELU, Activation::LEAKY_RELU, Activation::SIGMOID, Activation::TANH } ) {
-        test_XOR_backprop( a, 0.01, 20000 );
-    }
-    std::cout << "ALL TESTS PASSED" << endl;
-}
-
-int main( int argc, char **argv ) {
-    if ( argc > 1 && string( argv[1] ) == "test" ) {
-        run_tests();
-        return 0;
-    }
+// tests live in tests/ - run them with: ctest --test-dir build
+int main() {
     //execute_conv_workflow();
     execute_mlp_workflow();
     return 0;

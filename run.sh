@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build with CMake and run. Extra arguments are passed to the program, e.g. `./run.sh test`.
+# Build with CMake and run the training workflow. Extra arguments are passed to the program.
+# Unit tests: `ctest --test-dir build` after building.
 set -e
 cd "$(dirname "$0")"
 
