@@ -4,6 +4,7 @@
 #include <vector>
 #include "activation.hpp"
 #include "Tensor.hpp"
+#include "optimizer.hpp"
 using namespace std;
 
 template< typename T >
