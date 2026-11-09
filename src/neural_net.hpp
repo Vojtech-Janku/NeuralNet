@@ -1,9 +1,6 @@
 #pragma once
 #include <cassert>
-#include <cmath>
 #include <iostream>
-#include <omp.h>
-#include <random>
 #include <vector>
 #include "utils.hpp"
 #include "Layer.hpp"
@@ -14,16 +11,12 @@
 
 using namespace std;
 
-enum LayerType{ DEEP, CONVOLUTIONAL, MAXPOOLING, NORMALIZATION, ATTENTION };
-
 // Neural_net - the class for the whole neural network.
 // Contains all layers, feed forward function,
 //  train and predict functions
 class Neural_net
 {
     size_t input_size;         // number of neurons in input layer
-    vector<size_t> net_scheme; // network scheme excluding input layer for practical reasons
-    vector<Activation> act_funs;
     vector<unique_ptr<Layer>> layers;
 
     // softmax's derivative shortcut (see DeepLayer::compute_derivative) is only valid on the output layer
@@ -36,18 +29,13 @@ public:
     Neural_net( size_t input_size)
     : input_size(input_size) {}
 
-    Neural_net( vector<size_t> scheme, vector<Activation> funs) 
-    : input_size( scheme[0] ), 
-      net_scheme( scheme.begin(), scheme.end() ), act_funs( funs ) {
+    // scheme = { input_size, layer sizes... }, funs = one activation per (non-input) layer
+    Neural_net( vector<size_t> scheme, vector<Activation> funs)
+    : input_size( scheme[0] ) {
         assert( scheme.size() > 1 );
         for ( size_t i = 1; i < scheme.size(); i++ ) {
-            add_layer( act_funs[i-1], scheme[i] );
+            add_layer( funs[i-1], scheme[i] );
         }
-    }
-
-    vector<size_t> getScheme()
-    {
-        return net_scheme;
     }
 
     vector<unique_ptr<Layer>> &getLayers()
@@ -55,13 +43,7 @@ public:
         return layers;
     }
 
-    // TODO: add LayerType and a logic for Convolutional layer
-    // TODO: dont need to specify input size every time, can get it from previous layer
-    //void add_layer( size_t layer_size, size_t input_size, Activation a ) {
-    //    layers.push_back(     DeepLayer( layer_size, input_size, a ) );
-    //}
-
-    //Deep layer
+    // Deep layer - input size is taken from the previous layer (or the network input)
     void add_layer( Activation a, size_t layer_size ) {
         throw_if_after_softmax();
         size_t layer_input = getLayers().empty() ? input_size : getLayers().back()->getSize();
@@ -137,8 +119,6 @@ public:
             lay->layState.epsilon.clear();
             lay->layState.epsilon_bias.clear();
         }
-        // total squared error
-        //      float err = 0;
         // go through training data
         for ( size_t k = batch_range.first; k < batch_range.second; k++ ) {
             feed_forward( data.row(k) );
@@ -172,8 +152,6 @@ public:
         float err;
         size_t batch_start;
         size_t iter = 1;
-        //auto rng = std::default_random_engine {};
-        //std::shuffle(std::begin(cards_), std::end(cards_), rng);
         for ( size_t i = 0; i < epochs; i++ ) {
             batch_start = 0;
             while( batch_start+batch_size < data.getShape()[0] ) {
@@ -183,15 +161,13 @@ public:
                 if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
                 batch_start += batch_size;
             }
-            // spaghetti code but whatever
+            // last batch - the rest of the data (can be smaller than batch_size)
             compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
             modify_weights(learning_rate, opt, iter, momentum);
             iter++;
             if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
 
             err = total_squared_error( data, target );
-            //if ( i % 10 == 0 ) 
-                //std::cout << " Epoch " << i << ", total error = " << err << ", lrate = " << learning_rate << endl;
             if ( err < precision ) return true;
         }
         return false;   
@@ -205,10 +181,6 @@ public:
             for (size_t j = 0; j < out_size; j++) pred.at(k,j) = out[j];
         }
         return pred;
-    }
-
-    int get_layer_count() {
-        return layers.size();
     }
 
     float output_squared_error( const Tensor &target ) {
