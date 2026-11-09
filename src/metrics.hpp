@@ -1,7 +1,8 @@
 #pragma once
 // turning network outputs into predictions and measuring how good they are
-#include <cassert>
 #include <cstddef>
+#include <stdexcept>
+#include <string>
 #include <vector>
 #include "Tensor.hpp"
 
@@ -23,7 +24,10 @@ inline vector<int> get_max_idx( const Tensor &mat ) {
 
 // number of positions where pred and target agree
 inline size_t count_same( const vector<int> &pred, const vector<int> &target ) {
-    assert( pred.size() == target.size() );
+    if ( pred.size() != target.size() ) {
+        throw std::invalid_argument( "count_same: " + to_string( pred.size() ) + " predictions but "
+                                     + to_string( target.size() ) + " targets" );
+    }
     size_t same = 0;
     for (size_t i = 0; i < pred.size(); i++) {
         if ( pred[i] == target[i] ) same++;
