@@ -3,6 +3,7 @@
 #include "preprocessing.hpp"
 #include "metrics.hpp"
 #include <chrono>
+#include <functional>
 #include <string>
 
 // creating neural net, with some prints
@@ -31,120 +32,89 @@ void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, siz
         << chrono::duration_cast<chrono::seconds>(end - start).count() % 60 << "sec" << endl;    
 }
 
-// original working config: 3 deep layers (MLP), no conv
-void execute_mlp_workflow() {
-   std::cout << "Neural network - feed-forward MLP" << endl;
+// ---------- Fashion MNIST experiments ----------
 
-    std::cout << "--- Neural net on fashion MNIST ---" << endl;
-    // CONFIGURATION:
-    // scheme is <input_size==784, 64, 30, 10>, activations RELU, RELU, SOFTMAX (cross-entropy gradient)
-    // optimizer is momentum
-    // batch size is 64, training for 20 epochs
+const size_t IMAGE_SIDE  = 28;   // Fashion MNIST images are 28x28 grayscale
+const size_t NUM_CLASSES = 10;
 
-    // READING DATA
-    std::cout << "- Loading data..." << endl;
-    auto train_vectors =    read_data("data/fashion_mnist_train_vectors.csv", ',');
-    auto train_labels =     get_column( read_data("data/fashion_mnist_train_labels.csv", ','), 0 );
+// one split of the dataset (train or test), ready for the network
+struct Dataset {
+    Tensor inputs;        // {samples, 784}, or {samples, 28, 28} when loaded as images
+    Tensor targets;       // one-hot labels, {samples, 10}
+    vector<int> labels;   // class index of each sample
+};
 
-        // DATA TRANSFORMATIONS
-    std::cout << "- Transforming data..." << endl;
-    Tensor train_data = to_tensor( scale( train_vectors, 255 ) );
-    Tensor train_target = to_tensor( transform_index( train_labels, 10 ) );
-
-        //  CREATE NEW NEURAL NET
-    std::cout << "- Neural Net" << endl;
-    size_t input_size = train_vectors[0].size();
-    size_t output_size = 10;
-    vector<size_t> scheme = { input_size, 64, 30, output_size };
-    vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SOFTMAX };
-    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9;
-    Neural_net net = make_model( scheme, act);
-    net.init_gauss();
-
-        // LEARNING
-    std::cout << "- Model Learning" << endl;
-    size_t batch_size = 64;
-    float prec = 0.1;
-    size_t epochs = 20;
-    Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
-
-        // PREDICTION
-    auto train_pred = get_max_idx( net.predict( train_data ) );
-    export_data( "data/train_predictions.csv", train_pred );
-    auto test_vectors = read_data("data/fashion_mnist_test_vectors.csv", ',');
-    auto test_labels = get_column( read_data("data/fashion_mnist_test_labels.csv", ','), 0 );
-    Tensor test_data = to_tensor( scale( test_vectors, 255 ) );
-    Tensor test_target = to_tensor( transform_index( test_labels, 10 ) );
-
-    auto test_pred = get_max_idx( net.predict( test_data ) );
-    export_data( "data/test_predictions.csv", test_pred );
-
-        // MODEL EVALUATION
-    std::cout << "- Model Evaluation" << endl;
-    std::cout << "Training set accuracy:   " << get_accuracy( train_pred, train_labels ) << endl;
-    std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test_labels ) << endl;
-
-    std::cout << "DONE" << endl;
+// loads a vectors + labels CSV pair, scales pixels to [0, 1] and one-hot encodes the labels
+Dataset load_dataset( const string &vectors_path, const string &labels_path, bool as_images ) {
+    auto vectors = read_data( vectors_path, ',' );
+    auto labels  = get_column( read_data( labels_path, ',' ), 0 );
+    Tensor inputs = to_tensor( scale( vectors, 255 ) );
+    if ( as_images ) {
+        inputs.reshape( { inputs.getShape()[0], IMAGE_SIDE, IMAGE_SIDE } );   // conv layers need 2D images
+    }
+    return { inputs, to_tensor( transform_index( labels, NUM_CLASSES ) ), labels };
 }
 
-// conv layer feeding into a deep (output) layer
-void execute_conv_workflow() {
-   std::cout << "Neural network - conv + deep classifier" << endl;
+// everything that differs between experiments
+struct Experiment {
+    string title;
+    bool as_images;                                        // feed 28x28 images instead of flat 784 vectors
+    std::function<Neural_net( size_t input_size )> build;  // creates the network (before weight init)
+};
 
+// MLP: <784, 64, 30, 10>, activations RELU, RELU, SOFTMAX (cross-entropy gradient)
+Experiment mlp_experiment() {
+    return { "feed-forward MLP", false, []( size_t input_size ) {
+        vector<size_t> scheme = { input_size, 64, 30, NUM_CLASSES };
+        vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SOFTMAX };
+        return make_model( scheme, act );
+    } };
+}
+
+// one conv layer (5x5 kernel, RELU) over the 28x28 images -> 24x24 feature map,
+//   flattened straight into one deep (output) layer, SIGMOID, 10-way classification
+//   (backprop through more than one conv layer isn't implemented yet - see note in ConvLayer)
+Experiment conv_experiment() {
+    return { "conv + deep classifier", true, []( size_t input_size ) {
+        size_t kernel_size = 5;
+        Neural_net net( input_size );
+        net.add_layer( Activation::RELU, IMAGE_SIDE, IMAGE_SIDE, kernel_size );  // conv layer: 28x28 -> 24x24
+        net.add_layer( Activation::SIGMOID, NUM_CLASSES );                       // deep layer at the end (classification)
+        return net;
+    } };
+}
+
+// trains on the train split, writes predictions for both splits to data/ and prints their accuracy
+void run_experiment( const Experiment &exp ) {
+    std::cout << "Neural network - " << exp.title << endl;
     std::cout << "--- Neural net on fashion MNIST ---" << endl;
-    // CONFIGURATION:
-    // one conv layer (5x5 kernel, RELU) over the 28x28 images -> 24x24 feature map,
-    //   flattened straight into one deep (output) layer, SIGMOID, 10-way classification
-    //   (backprop through more than one conv layer isn't implemented yet - see note in ConvLayer)
-    // batch size is 64, training for 20 epochs
 
-    // READING DATA
     std::cout << "- Loading data..." << endl;
-    auto train_vectors =    read_data("data/fashion_mnist_train_vectors.csv", ',');
-    auto train_labels =     get_column( read_data("data/fashion_mnist_train_labels.csv", ','), 0 );
+    Dataset train = load_dataset( "data/fashion_mnist_train_vectors.csv",
+                                  "data/fashion_mnist_train_labels.csv", exp.as_images );
 
-        // DATA TRANSFORMATIONS
-    std::cout << "- Transforming data..." << endl;
-    Tensor train_data = to_tensor( scale( train_vectors, 255 ) );
-    train_data.reshape( { train_data.getShape()[0], 28, 28 } );   // conv layer needs 2D images, not flat pixel rows
-    Tensor train_target = to_tensor( transform_index( train_labels, 10 ) );
-
-        //  CREATE NEW NEURAL NET
     std::cout << "- Neural Net" << endl;
-    size_t input_size = train_vectors[0].size();
-    size_t output_size = 10;
-    size_t kernel_size = 5;
-    Neural_net net( input_size );
-    net.add_layer( Activation::RELU, 28, 28, kernel_size );  // conv layer: 28x28 -> 24x24
-    net.add_layer( Activation::SIGMOID, output_size );       // deep layer at the end (classification)
+    Neural_net net = exp.build( IMAGE_SIDE * IMAGE_SIDE );
     net.init_gauss();
 
-        // LEARNING
+    // training params - the same for every experiment for now (moving to a TrainConfig is planned)
     std::cout << "- Model Learning" << endl;
-    size_t batch_size = 64;
-    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9;
-    float prec = 0.1;
-    size_t epochs = 20;
+    size_t batch_size = 64, epochs = 20;
+    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9, prec = 0.1;
     Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
+    train_model( net, train.inputs, train.targets, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
 
-        // PREDICTION
-    auto train_pred = get_max_idx( net.predict( train_data ) );
+    auto train_pred = get_max_idx( net.predict( train.inputs ) );
     export_data( "data/train_predictions.csv", train_pred );
-    auto test_vectors = read_data("data/fashion_mnist_test_vectors.csv", ',');
-    auto test_labels = get_column( read_data("data/fashion_mnist_test_labels.csv", ','), 0 );
-    Tensor test_data = to_tensor( scale( test_vectors, 255 ) );
-    test_data.reshape( { test_data.getShape()[0], 28, 28 } );
-    Tensor test_target = to_tensor( transform_index( test_labels, 10 ) );
 
-    auto test_pred = get_max_idx( net.predict( test_data ) );
+    Dataset test = load_dataset( "data/fashion_mnist_test_vectors.csv",
+                                 "data/fashion_mnist_test_labels.csv", exp.as_images );
+    auto test_pred = get_max_idx( net.predict( test.inputs ) );
     export_data( "data/test_predictions.csv", test_pred );
 
-        // MODEL EVALUATION
     std::cout << "- Model Evaluation" << endl;
-    std::cout << "Training set accuracy:   " << get_accuracy( train_pred, train_labels ) << endl;
-    std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test_labels ) << endl;
+    std::cout << "Training set accuracy:   " << get_accuracy( train_pred, train.labels ) << endl;
+    std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test.labels ) << endl;
 
     std::cout << "DONE" << endl;
 }
@@ -153,8 +123,8 @@ void execute_conv_workflow() {
 // tests live in tests/ - run them with: ctest --test-dir build
 int main() {
     try {
-        //execute_conv_workflow();
-        execute_mlp_workflow();
+        //run_experiment( conv_experiment() );
+        run_experiment( mlp_experiment() );
     } catch ( const std::exception &e ) {   // e.g. a missing data file or an invalid network setup
         std::cerr << "Error: " << e.what() << endl;
         return 1;
