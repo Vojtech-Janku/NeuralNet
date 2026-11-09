@@ -1,27 +1,8 @@
 #include "neural_net.hpp"
 #include "data_io.hpp"
+#include "preprocessing.hpp"
 #include <chrono>
 #include <string>
-
-// data transformation functions
-auto scale( const matrix<int> &data_mat, float scale ) {
-    size_t n_rows = data_mat.size(), n_cols = data_mat[0].size();
-    matrix<float> res( n_rows, vector<float>( n_cols ) );
-    for (size_t i = 0; i < n_rows; i++) {
-        for (size_t j = 0; j < n_cols; j++) {
-            res[i][j] = data_mat[i][j] / scale;
-        }
-    }
-    return res;
-}
-
-auto transform_index( const vector<int> &index_vec, size_t max ) {
-    matrix<float> res( index_vec.size(), std::vector<float>(max, 0) );
-    for (size_t i = 0; i < res.size(); i++) {
-        res[i][ index_vec[i] ] = 1;
-    }
-    return res;
-}
 
 // functions for computing accuracy
 size_t count_same( const vector<int> &pred, const vector<int> &target ) {
