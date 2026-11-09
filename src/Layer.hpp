@@ -70,13 +70,48 @@ protected:
         {}
     };
 
-    
+    // optimizer state, same shapes as weights / bias
+    Tensor m_weights;   // MOMENTUM velocity, or first moment in ADAM
+    Tensor v_weights;   // second moment in ADAM
+    Tensor m_bias;
+    Tensor v_bias;
+
+    static constexpr float ADAM_BETA1 = 0.9f, ADAM_BETA2 = 0.999f, ADAM_EPS = 1e-8f;
+
+    // one optimizer step for a single parameter tensor
+    static void update_params( Tensor &params, const Tensor &grad, Tensor &m, Tensor &v,
+                               float learning_rate, Optimizer opt, size_t iter, float momentum ) {
+        switch (opt) {
+        case Optimizer::GRAD:
+            for ( size_t i = 0; i < params.getSize(); i++ ) params[i] -= learning_rate*grad[i];
+            break;
+        case Optimizer::MOMENTUM:
+            for ( size_t i = 0; i < params.getSize(); i++ ) {
+                m[i] = momentum*m[i] + learning_rate*grad[i];
+                params[i] -= m[i];
+            }
+            break;
+        case Optimizer::ADAM: {
+            float t = static_cast<float>( iter > 0 ? iter : 1 );
+            float m_correction = 1 - std::pow( ADAM_BETA1, t );
+            float v_correction = 1 - std::pow( ADAM_BETA2, t );
+            for ( size_t i = 0; i < params.getSize(); i++ ) {
+                m[i] = ADAM_BETA1*m[i] + (1 - ADAM_BETA1)*grad[i];
+                v[i] = ADAM_BETA2*v[i] + (1 - ADAM_BETA2)*grad[i]*grad[i];
+                float m_hat = m[i] / m_correction, v_hat = v[i] / v_correction;
+                params[i] -= learning_rate * m_hat / ( std::sqrt(v_hat) + ADAM_EPS );
+            }
+            break;
+        }
+        }
+    }
 
 public:
     Layer( vector<size_t> weight_shape, vector<size_t> bias_shape, state layState, Activation act ) 
     : weights(weight_shape), bias(bias_shape), 
       act(act), activation( activ_functions.at(act).first ), 
       activ_derivative( activ_functions.at(act).second ),
+      m_weights(weight_shape), v_weights(weight_shape), m_bias(bias_shape), v_bias(bias_shape),
       layState(layState)
     {}
 
@@ -129,25 +164,13 @@ public:
     virtual void compute_derivative() = 0;
     virtual void compute_epsilon( const Tensor &out_prev ) = 0;
 
-    // TODO: add optimizers
-    void modify_weights( float learning_rate ) {
-        update_gradient_descent( learning_rate );
+    // applies the (already averaged) gradient in layState using the chosen optimizer
+    // iter is the 1-based update count (used by ADAM's bias correction)
+    void modify_weights( float learning_rate, Optimizer opt = Optimizer::GRAD,
+                         size_t iter = 1, float momentum = 0.9f ) {
+        update_params( weights, layState.epsilon,      m_weights, v_weights, learning_rate, opt, iter, momentum );
+        update_params( bias,    layState.epsilon_bias, m_bias,    v_bias,    learning_rate, opt, iter, momentum );
     }
-
-    void update_gradient_descent( float learning_rate ) {
-        for (size_t i = 0; i < weights.getSize(); i++) { weights[i] -= learning_rate*layState.epsilon[i]; }
-        for (size_t i = 0; i < bias.getSize(); i++) { bias[i] -= learning_rate*layState.epsilon_bias[i]; }
-    }
-
-    /*void update_momentum( float &weight, const float &gradient, float &m) {
-        m = ( momentum*m + learning_rate*gradient );
-        weight -= m;
-    }
-
-    void update_adam( float &weight, const float &m, const float &v, const size_t &it ) {
-        float mhat = m / (1 - powf(beta1, it) ), vhat = v / (1 - powf(beta2, it) );
-        weight -= learning_rate * mhat / ( sqrt( vhat ) + eps );
-    }*/
 
     virtual ~Layer() {}
 };

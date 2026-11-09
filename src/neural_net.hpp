@@ -175,10 +175,9 @@ public:
 
 
     // updates all weights
-    void modify_weights( float learning_rate, Optimizer opt, const size_t &it = 0 ) {
-        for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-          #pragma omp parallel for num_threads(16)                    // multiprocessing
-            layers[lay]->modify_weights( learning_rate );
+    void modify_weights( float learning_rate, Optimizer opt, size_t iter, float momentum ) {
+        for ( auto &lay : layers ) {
+            lay->modify_weights( learning_rate, opt, iter, momentum );
         }
     }
 
@@ -197,7 +196,7 @@ public:
             while( batch_start+batch_size < data.getShape()[0] ) {
                 compute_gradient( data, target, make_pair(batch_start, batch_start+batch_size) );
                 //if (opt == Optimizer::ADAM) compute_adam();
-                modify_weights(learning_rate, opt, iter);
+                modify_weights(learning_rate, opt, iter, momentum);
                 iter++;
                 if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
                 batch_start += batch_size;
@@ -205,7 +204,7 @@ public:
             // spaghetti code but whatever
             compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
             //if (opt == Optimizer::ADAM) compute_adam();
-            modify_weights(learning_rate, opt, iter);
+            modify_weights(learning_rate, opt, iter, momentum);
             iter++;
             if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
 
