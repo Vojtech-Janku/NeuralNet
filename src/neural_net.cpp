@@ -199,11 +199,11 @@ Neural_net make_conv_model( vector<size_t> scheme, vector<Activation> act) {
 // training neural net, with some prints
 void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, size_t batch_size, 
                   float learning_rate, float lr_decay, Optimizer opt, 
-                  float prec, size_t epochs) {
+                  float prec, size_t epochs, float momentum ) {
     std::cout << "Training with params:     batch_size = " << batch_size << ", optimizer = " << get_str(opt)
-              << ", epochs = " << epochs << ", precision = " << prec << "..." << endl;
+              << ", momentum = " << momentum << ", epochs = " << epochs << ", precision = " << prec << "..." << endl;
     auto start = chrono::steady_clock::now();
-    bool trained = net.train( train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs);
+    bool trained = net.train( train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs, momentum );
     auto end = chrono::steady_clock::now();
     std::cout << "Computation stopped after model reached " 
               << ( (trained) ? "precision." : "maximum epochs." ) << endl;
@@ -249,7 +249,7 @@ void execute_mlp_workflow() {
     float prec = 0.1;
     size_t epochs = 20;
     Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs );
+    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
 
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );
@@ -309,7 +309,7 @@ void execute_conv_workflow() {
     float prec = 0.1;
     size_t epochs = 20;
     Optimizer opt = Optimizer::MOMENTUM;
-    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs );
+    train_model( net, train_data, train_target, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
 
         // PREDICTION
     auto train_pred = get_max_idx( net.predict( train_data ) );
