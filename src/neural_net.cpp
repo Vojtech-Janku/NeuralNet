@@ -334,7 +334,21 @@ void execute_conv_workflow() {
 }
 
 
-int main() {
+// quick sanity tests - run with: ./network test
+void run_tests() {
+    test_minimal_XOR();
+    test_simple_conv_layer();
+    for ( Activation a : { Activation::RELU, Activation::LEAKY_RELU, Activation::SIGMOID, Activation::TANH } ) {
+        test_XOR_backprop( a, 0.01, 20000 );
+    }
+    std::cout << "ALL TESTS PASSED" << endl;
+}
+
+int main( int argc, char **argv ) {
+    if ( argc > 1 && string( argv[1] ) == "test" ) {
+        run_tests();
+        return 0;
+    }
     //execute_conv_workflow();
     execute_mlp_workflow();
     return 0;
