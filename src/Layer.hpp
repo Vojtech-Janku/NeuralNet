@@ -78,6 +78,12 @@ protected:
 
     static constexpr float ADAM_BETA1 = 0.9f, ADAM_BETA2 = 0.999f, ADAM_EPS = 1e-8f;
 
+    // one generator shared by all layers, so each layer gets different (but reproducible) values
+    static std::mt19937 &rng() {
+        static std::mt19937 generator( 42 );
+        return generator;
+    }
+
     // one optimizer step for a single parameter tensor
     static void update_params( Tensor &params, const Tensor &grad, Tensor &m, Tensor &v,
                                float learning_rate, Optimizer opt, size_t iter, float momentum ) {
@@ -117,6 +123,9 @@ public:
 
     state layState;
 
+    // reseed the generator used by initialize_uniform / initialize_gauss
+    static void seed( unsigned s ) { rng().seed( s ); }
+
     virtual string getType() = 0;
     virtual size_t getSize() = 0;
     virtual size_t getInputSize() = 0;
@@ -132,7 +141,7 @@ public:
     // I found experimentally that it's better to initialize biases a bit higher
     void initialize_uniform( float min = 0, float max = 0.1 )
     {
-        std::default_random_engine generator;
+        auto &generator = rng();
         std::uniform_real_distribution<float> distribution(min, max);
         std::uniform_real_distribution<float> bias_distribution(min, 5*max);
         for ( size_t i = 0; i < weights.getSize(); i++ ) 
@@ -147,7 +156,7 @@ public:
     void initialize_gauss( float mean = 0, float stddev = -1 )
     {
         if ( stddev < 0 ) stddev = sqrt( 2.0 / getInputSize() ); // He initialization by default
-        std::default_random_engine generator;
+        auto &generator = rng();
         std::normal_distribution<float> distribution(mean, stddev);
         //std::normal_distribution<float> bias_distribution(0.01, 0.01);
         std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
