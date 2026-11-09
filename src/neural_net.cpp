@@ -338,7 +338,7 @@ void execute_conv_workflow() {
 
 
 int main() {
-    execute_conv_workflow();
-    //execute_mlp_workflow();
+    //execute_conv_workflow();
+    execute_mlp_workflow();
     return 0;
 }

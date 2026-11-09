@@ -86,9 +86,10 @@ public:
         for ( size_t n = 0; n < getSize(); n++ ) 
         {
             if (act == SOFTMAX) {
-                for ( size_t j = 0; j < getSize(); j++ ) {
-                    // TODO: implement softmax derivative
-                }
+                // softmax + cross-entropy: d Err / d potential = output - target, which backprop
+                // already puts in err_output - so the derivative factor is just 1.
+                // Only valid when softmax is the output layer (enforced in Neural_net::add_layer).
+                layState.derivative[n] = 1;
             } else {
                 layState.derivative[n] = activ_derivative( layState.potential[n] );
             }
