@@ -140,6 +140,7 @@ public:
         // average the gradient
         for ( auto &lay : layers ) {
             lay->layState.epsilon / ( batch_range.second-batch_range.first );
+            lay->layState.epsilon_bias / ( batch_range.second-batch_range.first );
         }
     }
     // just overload
