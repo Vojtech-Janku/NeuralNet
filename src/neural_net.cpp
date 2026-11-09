@@ -116,7 +116,7 @@ void test_minimal_XOR() {
         // SET WEIGHTS AND BIASES
     net.getLayers().at(0)->set_weights( Tensor( { 2, 2 }, { 2, 2, -2, -2 } ) );
     net.getLayers().at(1)->set_weights( Tensor( { 1, 2 }, { 1, 1 } ) );
-    net.getLayers().at(0)->set_biases( Tensor( { 1 }, { 1, 3 } ) );
+    net.getLayers().at(0)->set_biases( Tensor( { 2 }, { -1, 3 } ) );   // neuron 1 = OR, neuron 2 = NAND
     net.getLayers().at(1)->set_biases( Tensor( { 1 }, { -2 } ) );
         // DATA
     Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
