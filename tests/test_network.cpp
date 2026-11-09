@@ -1,4 +1,4 @@
-// Tests ported from the old `./network test` mode (run_tests() in neural_net.cpp).
+// Tests ported from the old `./network test` mode (run_tests() in the former src/neural_net.cpp).
 // Kept in one file for now: activation.hpp / utils.hpp still define non-inline functions,
 // so including them from a second test .cpp would break linking. Split up after the header cleanup.
 #include <gtest/gtest.h>

@@ -30,7 +30,7 @@ else()
 endif()
 
 # ---- executable
-add_executable(network src/neural_net.cpp)
+add_executable(network apps/main.cpp)
 target_link_libraries(network PRIVATE nn)
 if(NN_IPO_SUPPORTED)
     set_property(TARGET network PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
