@@ -145,7 +145,7 @@ public:
     }
     // just overload
     void compute_gradient( const Tensor &data, const Tensor &labels ) {
-        compute_gradient( data, labels, make_pair(0, data.getShape()[1] ) );
+        compute_gradient( data, labels, make_pair( size_t(0), data.getShape()[0] ) );
     }
 
     // updates all weights
