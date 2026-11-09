@@ -114,16 +114,6 @@ Neural_net make_model( vector<size_t> scheme, vector<Activation> act) {
     return Neural_net( scheme, act);
 }
 
-// creating neural net, with some prints
-Neural_net make_conv_model( vector<size_t> scheme, vector<Activation> act) {
-    std::cout << "Creating neural net, scheme = ";
-    print_vec( scheme );
-    std::cout << ", activation = [ " << get_str( act[0] );
-    for ( size_t i = 1; i < act.size(); i++ ) { std::cout << ", " << get_str( act[i] ); }
-    std::cout << " ]";
-    return Neural_net( scheme, act);
-}
-
 // training neural net, with some prints
 void train_model( Neural_net &net, Tensor &train_data, Tensor &train_target, size_t batch_size, 
                   float learning_rate, float lr_decay, Optimizer opt, 
@@ -145,9 +135,8 @@ void execute_mlp_workflow() {
    std::cout << "Neural network - feed-forward MLP" << endl;
 
     std::cout << "--- Neural net on fashion MNIST ---" << endl;
-    // WORKING (final) CONFIGURATION:
-    // scheme is <input_size==784, 64, 30, 10>, all activation is RELU
-    //       (should probably use softmax for output layer but didn't implement it)
+    // CONFIGURATION:
+    // scheme is <input_size==784, 64, 30, 10>, activations RELU, RELU, SOFTMAX (cross-entropy gradient)
     // optimizer is momentum
     // batch size is 64, training for 20 epochs
 
@@ -207,7 +196,7 @@ void execute_conv_workflow() {
     // one conv layer (5x5 kernel, RELU) over the 28x28 images -> 24x24 feature map,
     //   flattened straight into one deep (output) layer, SIGMOID, 10-way classification
     //   (backprop through more than one conv layer isn't implemented yet - see note in ConvLayer)
-    // batch size is 20, training for 20 epochs
+    // batch size is 64, training for 20 epochs
 
     // READING DATA
     std::cout << "- Loading data..." << endl;
@@ -252,16 +241,11 @@ void execute_conv_workflow() {
     export_data( "data/test_predictions.csv", test_pred );
 
         // MODEL EVALUATION
-    // using test data for the purpose of calculating and printing accuracy
-    // - !!! COMMENT THIS SECTION BEFORE SUBMITTING !!!
-    
     std::cout << "- Model Evaluation" << endl;
-    // train pred accuracy
     std::cout << "Training set accuracy:   " << get_accuracy( train_pred, train_labels ) << endl;
-    // test pred accuracy
     std::cout << "Test set accuracy:   " << get_accuracy( test_pred, test_labels ) << endl;
-    
-    std::cout << "DONE" << endl; 
+
+    std::cout << "DONE" << endl;
 }
 
 
