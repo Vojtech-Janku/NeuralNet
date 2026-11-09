@@ -28,20 +28,6 @@ vector<T> get_column( const matrix<T> &mat, size_t col ) {
     return res;
 }
 
-// per-row argmax over a 2D Tensor
-vector<int> get_max_idx( const Tensor &mat ) {
-    size_t rows = mat.getShape()[0], cols = mat.getShape()[1];
-    vector<int> res( rows );
-    for ( size_t i = 0; i < rows; i++ ) {
-        size_t max_idx = 0;
-        for ( size_t j = 1; j < cols; j++ ) {
-            if ( mat.at(i,j) > mat.at(i,max_idx) ) { max_idx = j; }
-        }
-        res[i] = max_idx;
-    }
-    return res;
-}
-
 // print functions
 template< typename T >
 void print_vec( const vector<T> &vec ) {

@@ -1,22 +1,9 @@
 #include "neural_net.hpp"
 #include "data_io.hpp"
 #include "preprocessing.hpp"
+#include "metrics.hpp"
 #include <chrono>
 #include <string>
-
-// functions for computing accuracy
-size_t count_same( const vector<int> &pred, const vector<int> &target ) {
-    assert( pred.size() == target.size() );
-    size_t same = 0;
-    for (size_t i = 0; i < pred.size(); i++) {
-        if ( pred[i] == target[i] ) same++;
-    }
-    return same;
-}
-
-float get_accuracy( const vector<int> &pred, const vector<int> &target ) {
-    return ( count_same( pred, target ) / (float) pred.size() );
-}
 
 // creating neural net, with some prints
 Neural_net make_model( vector<size_t> scheme, vector<Activation> act) {
