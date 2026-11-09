@@ -61,9 +61,14 @@ public:
             layState.potential[j] = potential;
         }
         if (act == SOFTMAX) {
+            // subtract the max potential before exp - same result, but exp can't overflow
+            float max_potential = layState.potential[0];
+            for ( size_t j = 1; j < getSize(); j++ ) {
+                if ( layState.potential[j] > max_potential ) max_potential = layState.potential[j];
+            }
             float sum = 0;
             for ( size_t j = 0; j < getSize(); j++ ) {
-                layState.output[j] = exp(layState.potential[j]);
+                layState.output[j] = exp(layState.potential[j] - max_potential);
                 sum += layState.output[j];
             }
             for ( size_t j = 0; j < getSize(); j++ ) {
