@@ -9,23 +9,12 @@
 #include "Layer.hpp"
 #include "DeepLayer.hpp"
 #include "ConvLayer.hpp"
+#include "optimizer.hpp"
 #include <memory>
 
 using namespace std;
 
 enum LayerType{ DEEP, CONVOLUTIONAL, MAXPOOLING, NORMALIZATION, ATTENTION };
-
-// optimizers
-enum Optimizer{ GRAD, MOMENTUM, ADAM };
-// just for printing
-string get_str( Optimizer opt ) {
-    switch (opt) {
-    case Optimizer::GRAD:          return "GRAD";
-    case Optimizer::MOMENTUM:      return "MOMENTUM";
-    case Optimizer::ADAM:          return "ADAM";
-    default:                       return "Unknown";
-    }
-}
 
 // Neural_net - the class for the whole neural network.
 // Contains all layers, feed forward function,
