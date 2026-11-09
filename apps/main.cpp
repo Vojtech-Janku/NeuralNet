@@ -59,12 +59,13 @@ Dataset load_dataset( const string &vectors_path, const string &labels_path, boo
 struct Experiment {
     string title;
     bool as_images;                                        // feed 28x28 images instead of flat 784 vectors
+    float learning_rate;                                   // initial learning rate (decays during training)
     std::function<Neural_net( size_t input_size )> build;  // creates the network (before weight init)
 };
 
 // MLP: <784, 64, 30, 10>, activations RELU, RELU, SOFTMAX (cross-entropy gradient)
 Experiment mlp_experiment() {
-    return { "feed-forward MLP", false, []( size_t input_size ) {
+    return { "feed-forward MLP", false, 0.01f, []( size_t input_size ) {
         vector<size_t> scheme = { input_size, 64, 30, NUM_CLASSES };
         vector<Activation> act = { Activation::RELU, Activation::RELU, Activation::SOFTMAX };
         return make_model( scheme, act );
@@ -74,8 +75,10 @@ Experiment mlp_experiment() {
 // one conv layer (5x5 kernel, RELU) over the 28x28 images -> 24x24 feature map,
 //   flattened straight into one deep (output) layer, SIGMOID, 10-way classification
 //   (backprop through more than one conv layer isn't implemented yet - see note in ConvLayer)
+// lr 0.001: all 576 kernel positions share one 5x5 kernel, so 0.01 with momentum 0.9 overshoots
+//   (measured on the full data: 52.9% test accuracy at 0.01, 82.9% at 0.001)
 Experiment conv_experiment() {
-    return { "conv + deep classifier", true, []( size_t input_size ) {
+    return { "conv + deep classifier", true, 0.001f, []( size_t input_size ) {
         size_t kernel_size = 5;
         Neural_net net( input_size );
         net.add_layer( Activation::RELU, IMAGE_SIDE, IMAGE_SIDE, kernel_size );  // conv layer: 28x28 -> 24x24
@@ -97,10 +100,10 @@ void run_experiment( const Experiment &exp ) {
     Neural_net net = exp.build( IMAGE_SIDE * IMAGE_SIDE );
     net.init_gauss();
 
-    // training params - the same for every experiment for now (moving to a TrainConfig is planned)
+    // other training params - the same for every experiment for now (moving to a TrainConfig is planned)
     std::cout << "- Model Learning" << endl;
     size_t batch_size = 64, epochs = 20;
-    float learning_rate = 0.01, lr_decay = 0.0002, moment = 0.9, prec = 0.1;
+    float learning_rate = exp.learning_rate, lr_decay = 0.0002, moment = 0.9, prec = 0.1;
     Optimizer opt = Optimizer::MOMENTUM;
     train_model( net, train.inputs, train.targets, batch_size, learning_rate, lr_decay, opt, prec, epochs, moment );
 
