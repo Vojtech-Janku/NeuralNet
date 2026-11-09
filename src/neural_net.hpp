@@ -26,8 +26,6 @@ class Neural_net
     vector<Activation> act_funs;
     vector<unique_ptr<Layer>> layers;
 
-    float beta1 = 0.9, beta2 = 0.999, eps = 0.00000001; // for ADAM optimizer
-
 public:
     Neural_net( size_t input_size)
     : input_size(input_size) {}
@@ -149,31 +147,6 @@ public:
         compute_gradient( data, labels, make_pair(0, data.getShape()[1] ) );
     }
 
-    void compute_single_adam( float &m, float &v, const float &epsilon, 
-                              float beta1, float beta2, float eps ) {
-                m = ( beta1*m + (1 - beta1)*epsilon );
-                v = ( beta2*v + (1 - beta2)*epsilon*epsilon );   
-    }
-
-    /*
-    void compute_adam() {
-        for ( size_t lay = 0; lay < layers.size(); lay++ ) {
-          #pragma omp parallel for num_threads(16)                    // multiprocessing 
-            for ( size_t j = 0; j < layers[lay].getSize(); j++ ) {
-                for ( size_t i = 0; i < layers[lay].getInputSize(); i++ ) {
-                    compute_single_adam( layers[lay].layState.m.at(j,i), layers[lay].layState.v.at(j,i), 
-                                         layers[lay].layState.epsilon.at(j,i), beta1, beta2, eps );
-                }
-                compute_single_adam( layers[lay].layState.m_bias[j], layers[lay].layState.v_bias[j], 
-                                         layers[lay].layState.epsilon_bias[j], beta1, beta2, eps );
-            }
-        } 
-    }
-    */
-
-    // ---- single weight update functions for optimizers ---
-
-
     // updates all weights
     void modify_weights( float learning_rate, Optimizer opt, size_t iter, float momentum ) {
         for ( auto &lay : layers ) {
@@ -195,7 +168,6 @@ public:
             batch_start = 0;
             while( batch_start+batch_size < data.getShape()[0] ) {
                 compute_gradient( data, target, make_pair(batch_start, batch_start+batch_size) );
-                //if (opt == Optimizer::ADAM) compute_adam();
                 modify_weights(learning_rate, opt, iter, momentum);
                 iter++;
                 if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
@@ -203,7 +175,6 @@ public:
             }
             // spaghetti code but whatever
             compute_gradient( data, target, make_pair( batch_start, data.getShape()[0] ) );
-            //if (opt == Optimizer::ADAM) compute_adam();
             modify_weights(learning_rate, opt, iter, momentum);
             iter++;
             if ( learning_rate > 0.001 ) learning_rate = lr_init * ( 1 / (1+lr_decay*iter) ); // learning rate decay
