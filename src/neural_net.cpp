@@ -130,26 +130,23 @@ void test_minimal_XOR() {
 
 // simple neural net with 1 conv layer
 void test_simple_conv_layer() {
-    std::cout << "Testing simple conv net:" << endl;
-    // vector<size_t> scheme = {2, 3, 1};
-    // vector<Activation> act = { Activation::STEP, Activation::STEP };
-    // Neural_net net( scheme, act );
-
-    Neural_net net( 2 );
-    net.add_layer( Activation::RELU, 3 );
-    net.add_layer( Activation::RELU, 1 );
+    std::cout << "Testing simple conv layer (forward pass):" << endl;
+    // 3x3 input, 2x2 kernel, stride 1, no padding -> 2x2 output
+    Neural_net net( 9 );
+    net.add_layer( Activation::RELU, 3, 3, 2 );
         // SET WEIGHTS AND BIASES
-    net.getLayers().at(0)->set_weights( Tensor( { 3, 2 }, { 2, 2, -2, -2, 1, -1 } ) );
-    net.getLayers().at(1)->set_weights( Tensor( { 1, 3 }, { 1, 1, 1 } ) );
-    net.getLayers().at(0)->set_biases( Tensor( { 3 }, { -1, 3, 0 } ) );
-    net.getLayers().at(1)->set_biases( Tensor( { 1 }, { -2 } ) );
+    // kernel [[1,0],[0,1]] sums each window's top-left and bottom-right pixel
+    net.getLayers().at(0)->set_weights( Tensor( { 2, 2 }, { 1, 0, 0, 1 } ) );
+    net.getLayers().at(0)->set_biases( Tensor( { 1 }, { -7 } ) );
         // DATA
-    Tensor points = to_tensor( { {0,0}, {0,1}, {1,0}, {1,1} } );
-    Tensor expected = to_tensor( { {0}, {1}, {1}, {0} } );
+    Tensor image( { 3, 3 }, { 1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9 } );
+    // raw sums: 1+5=6, 2+6=8, 4+8=12, 5+9=14; minus bias 7 -> -1, 1, 5, 7; ReLU clips -1 to 0
+    Tensor expected( { 2, 2 }, { 0, 1,
+                                 5, 7 } );
         // RESULT
-    for ( size_t i = 0; i < points.getShape()[0]; i++ ) {
-        assert( net.feed_forward( points.row(i) ) == expected.row(i) );
-    }
+    assert( net.feed_forward( image ) == expected );
     std::cout << "PASSED" << endl;
 }
 
