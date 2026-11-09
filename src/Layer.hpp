@@ -7,9 +7,6 @@
 #include "optimizer.hpp"
 using namespace std;
 
-template< typename T >
-using matrix = vector<vector<T>>;
-
 class Layer
 {
 protected:
