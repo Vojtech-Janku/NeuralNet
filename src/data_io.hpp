@@ -1,8 +1,8 @@
 #pragma once
 // reading and writing CSV data files
-#include <cassert>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,7 +37,9 @@ inline void SkipBOM(std::fstream &in)
 inline auto read_data( string path, char del ) {
     string line, word;
     fstream fin( path, ios::in );
-    assert( fin.is_open() );
+    if ( !fin.is_open() ) {
+        throw std::runtime_error( "read_data: cannot open file '" + path + "'" );
+    }
     auto [rows, cols] = get_dimensions( path, del );
     matrix<int> table( rows, vector<int>( cols ) ); // initiate whole table at once
 

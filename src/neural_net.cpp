@@ -184,7 +184,12 @@ void execute_conv_workflow() {
 
 // tests live in tests/ - run them with: ctest --test-dir build
 int main() {
-    //execute_conv_workflow();
-    execute_mlp_workflow();
+    try {
+        //execute_conv_workflow();
+        execute_mlp_workflow();
+    } catch ( const std::exception &e ) {   // e.g. a missing data file or an invalid network setup
+        std::cerr << "Error: " << e.what() << endl;
+        return 1;
+    }
     return 0;
 }
