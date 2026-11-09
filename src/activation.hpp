@@ -19,14 +19,12 @@ string get_str( Activation act )
     }
 }
 
-//typedef std::vector<float> (*vector_function)(std::vector<float> &);
-
 // activation functions and their derivatives
 typedef float (*act_fun)(float);
 float step( float x ) { return ( x < 0 ) ? 0 : 1; }
 float relu( float x ) { return ( x < 0 ) ? 0 : x; }
 float leaky_relu( float x ) { return ( x < 0 ) ? x/16 : x; }
-float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }  //{ return x / (1 + abs(x)); } // "fast" sigmoid
+float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }
 float tanh_fun( float x ) { return std::tanh(x); }
 float step_diff( float ) { return 0; }
 float relu_diff( float x ) { return ( x <= 0 ) ? 0 : 1; }
