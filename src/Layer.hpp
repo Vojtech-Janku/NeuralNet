@@ -21,8 +21,7 @@ protected:
 
     // Struct representing the inner state of the layer.
     // Used for storing all computations.
-    /*
-    struct state 
+    struct state
     {
         Tensor potential;    // potential of each neuron
         Tensor output;       // output of each neuron
@@ -30,22 +29,6 @@ protected:
         Tensor epsilon;      // gradient
         Tensor epsilon_bias; // gradient for bias weights
         Tensor err_output;   // (d Err / d output) for each neuron
-        // optimizer computations
-        Tensor m;    // used for MOMENTUM or first moment in ADAM
-        Tensor v;    // used for second moment in ADAM
-        Tensor m_bias;
-        Tensor v_bias;
-    };
-    */
-    struct state 
-    {
-        Tensor potential;    // potential of each neuron
-        Tensor output;       // output of each neuron
-        Tensor derivative;   // derivative of sigma( potential )
-        Tensor epsilon;      // gradient
-        Tensor epsilon_bias; // gradient for bias weights
-        Tensor err_output;   // (d Err / d output) for each neuron
-        // TODO: optimizer computations
 
         state( size_t n, size_t incoming )
         : potential(    { n } ),
@@ -54,10 +37,6 @@ protected:
           epsilon(      { n, incoming } ),
           epsilon_bias( { n } ),
           err_output(   { n } )
-          //m(            { n, incoming } ),
-          //v(            { n, incoming } ),
-          //m_bias(       { n } ),
-          //v_bias(       { n } )
         {}
 
         state( size_t out_height, size_t out_width, size_t kernel_size )
@@ -156,24 +135,19 @@ public:
         for ( size_t i = 0; i < weights.getSize(); i++ ) 
         {
             weights[i] = distribution(generator);
-                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start                                    
-                  // theoretically it should work but practically it didn't so YOLO, abs value :)
         }
         for (size_t i = 0; i < bias.getSize(); i++) { bias[i] = bias_distribution(generator); }
     }
-    // gaussian initialization //TODO: separate weights and biases initial distribution
+    // gaussian initialization (weights), small positive uniform biases
     void initialize_gauss( float mean = 0, float stddev = -1 )
     {
         if ( stddev < 0 ) stddev = sqrt( 2.0 / getInputSize() ); // He initialization by default
         auto &generator = rng();
         std::normal_distribution<float> distribution(mean, stddev);
-        //std::normal_distribution<float> bias_distribution(0.01, 0.01);
         std::uniform_real_distribution<float> bias_distribution(0.01, 0.1);
         for ( size_t i = 0; i < weights.getSize(); i++ ) 
         {
             weights[i] = distribution(generator);
-                //w = fabs( distribution(generator) ); // with negative weigths, RELU layers kept dying at the start                                    
-                  // theoretically it should work but practically it didn't so YOLO, abs value :)
         }
         for (size_t i = 0; i < bias.getSize(); i++) { bias[i] = bias_distribution(generator); }
     }
