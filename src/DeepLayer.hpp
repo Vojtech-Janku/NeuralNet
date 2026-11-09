@@ -39,16 +39,10 @@ public:
         return bias;
     }
 
-    void set_potential( Tensor pot )
-    {
-        layState.potential = pot;
-    }
-
     // the core of feed forward - computes potential and output for this layer
+    // input can have any shape (e.g. a 2D conv output) - it is read as a flat vector via operator[]
     void compute_potential( const Tensor &input)
     {
-        //input.flatten(); TODO: handle this in outside? or do I need this at all? I think not with operator[]
-
       #pragma omp parallel for num_threads(16)                    // multiprocessing
         for ( size_t j = 0; j < getSize(); j++ )
         {
@@ -96,7 +90,7 @@ public:
         }
     }
 
-    // computes gradient    TODO: move to layer.state?
+    // accumulates this sample's weight and bias gradients into layState.epsilon / epsilon_bias
     void compute_epsilon( const Tensor &out_prev ) 
     {
       #pragma omp parallel for num_threads(16)                    // multiprocessing 
