@@ -26,22 +26,12 @@ struct Tensor
     float &at(size_t i, size_t j) {return data[i*shape[1]+j];}
     const float &at(size_t i, size_t j) const {return data[i*shape[1]+j];}
 
-    Tensor &operator*(float n) {
-        for (auto &e : data) e *= n;
-        return *this;
-    }
-
     Tensor &operator/(float n) {
         for (auto &e : data) e /= n;
         return *this;
     }
 
-    Tensor operator*(Tensor &other) {
-        return Tensor(vector<size_t>(0));   // TODO: fix this
-    }
-
     size_t getSize() const { return data.size(); }
-    size_t getDimension() const { return shape.size(); }
     vector<size_t> getShape() const { return shape; }
 
     void clear() { fill( data.begin(), data.end(), 0 ); }
@@ -54,10 +44,6 @@ struct Tensor
         for ( auto d : row_shape ) row_size *= d;
         vector<float> row_data( data.begin() + i*row_size, data.begin() + (i+1)*row_size );
         return Tensor( row_shape, row_data );
-    }
-
-    void flatten() {
-        shape = { data.size() };
     }
 
     void reshape( vector<size_t> newShape ){
