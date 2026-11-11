@@ -9,7 +9,7 @@ template< typename T >
 using matrix = vector<vector<T>>;
 
 // flattens a matrix<float> into a Tensor of shape {rows, cols}
-Tensor to_tensor( const matrix<float> &m ) {
+inline Tensor to_tensor( const matrix<float> &m ) {
     size_t rows = m.size(), cols = rows ? m[0].size() : 0;
     vector<float> flat;
     flat.reserve( rows*cols );
@@ -39,7 +39,7 @@ void print_vec( const vector<T> &vec ) {
     std::cout << " >";
 }
 
-void print_vec( const Tensor &t ) {
+inline void print_vec( const Tensor &t ) {
     std::cout << "< ";
     if ( t.getSize() > 0 ) std::cout << t[0];
     for ( size_t i = 1; i < t.getSize(); i++ ) {
