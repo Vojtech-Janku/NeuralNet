@@ -1,0 +1,11 @@
+.vscode/*
+
+# build output
+network
+build/
+
+# datasets and generated predictions (re-create with data/download_data.py and ./run.sh)
+data/*.csv
+data/old/
+data/backup/
+data/downloaded_kaggle/

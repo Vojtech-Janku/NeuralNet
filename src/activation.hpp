@@ -6,7 +6,7 @@ using namespace std;
 
 enum Activation{ STEP, RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX };
 // just for printing
-string get_str( Activation act ) 
+inline string get_str( Activation act )
 {
     switch (act) {
     case Activation::STEP:          return "Step";
@@ -19,21 +19,20 @@ string get_str( Activation act )
     }
 }
 
-//typedef std::vector<float> (*vector_function)(std::vector<float> &);
-
 // activation functions and their derivatives
 typedef float (*act_fun)(float);
-float step( float x ) { return ( x < 0 ) ? 0 : 1; }
-float relu( float x ) { return ( x < 0 ) ? 0 : x; }
-float leaky_relu( float x ) { return ( x < 0 ) ? x/16 : x; }
-float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }  //{ return x / (1 + abs(x)); } // "fast" sigmoid
-float tanh_fun( float x ) { return std::tanh(x); }
-float step_diff( float ) { return 0; }
-float relu_diff( float x ) { return ( x <= 0 ) ? 0 : 1; }
-float leaky_relu_diff( float x ) { return ( x < 0 ) ? 1/16 : 1; }
-float sigmoid_diff( float x ) { return sigmoid(x) * (1 - sigmoid(x) ); }
-float tanh_diff( float x ) { return 1 - std::pow(std::tanh(x), 2); }
-map< Activation, pair<act_fun, act_fun> > activ_functions = {
+inline float step( float x ) { return ( x < 0 ) ? 0 : 1; }
+inline float relu( float x ) { return ( x < 0 ) ? 0 : x; }
+inline float leaky_relu( float x ) { return ( x < 0 ) ? x/16 : x; }
+inline float sigmoid( float x ) { return 1 / ( 1 + exp(-x) ); }
+inline float tanh_fun( float x ) { return std::tanh(x); }
+inline float step_diff( float ) { return 0; }
+inline float relu_diff( float x ) { return ( x <= 0 ) ? 0 : 1; }
+inline float leaky_relu_diff( float x ) { return ( x < 0 ) ? 1.0f/16 : 1; }
+inline float sigmoid_diff( float x ) { return sigmoid(x) * (1 - sigmoid(x) ); }
+inline float tanh_diff( float x ) { return 1 - std::pow(std::tanh(x), 2); }
+// inline variable (C++17): one shared map, no matter how many .cpp files include this header
+inline map< Activation, pair<act_fun, act_fun> > activ_functions = {
     { Activation::STEP,         make_pair(step, step_diff) },
     { Activation::RELU,         make_pair(relu, relu_diff) },
     { Activation::LEAKY_RELU,   make_pair(leaky_relu, leaky_relu_diff) },

@@ -3,7 +3,7 @@ As a semester project, I was tasked to implement a simple neural network (MLP - 
 Now I am gradually expanding the project to contain more methods, layer types, optimizers etc.
 
 ### USER GUIDE
-- the model is created, trained and used for predictions in the main function in neural_net.cpp, you can play around with hyperparameters there - I will make some more user friendly API in time
+- the model is created, trained and used for predictions in the main function in apps/main.cpp, you can play around with hyperparameters there - I will make some more user friendly API in time
 - compile and run the program by running <run.sh>
 - running the program outputs two files to the data directory:
      - `train_predictions.csv` - network predictions for the train set.
